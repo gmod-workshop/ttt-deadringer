@@ -338,41 +338,8 @@ function SWEP:Cloak(ply, dmginfo)
         weapon:SetIronsights(false)
     end
 
-    local ragdoll
-    if engine.ActiveGamemode() == 'terrortown' then
-        DamageLog('Dead Ringer: ' .. ply:Nick() .. ' has cloaked after taking ' .. dmginfo:GetDamage() .. ' damage.')
-
-        -- The original addon rewrote CORPSE.Create for some reason... lol
-        ragdoll = CORPSE.Create(ply, dmginfo:GetAttacker(), dmginfo)
-        if not IsValid(ragdoll) then return end
-
-        ragdoll.was_role = ROLE_INNOCENT
-        ragdoll.bomb_wire = false
-
-        CORPSE.SetCredits(ragdoll, 0)
-
-        if TTT2 then
-            ragdoll.was_team = TEAM_INNOCENT
-            STATUS:RemoveStatus(ply, 'deadringer_ready')
-            STATUS:AddTimedStatus(ply, 'deadringer_cloaked', self.CVarCloakTime:GetInt(), true)
-        end
-    else
-        ragdoll = ents.Create('prop_ragdoll')
-        ragdoll:SetPos(ply:GetPos())
-        ragdoll:SetModel(ply:GetModel())
-        ragdoll:SetAngles(ply:GetAngles())
-        ragdoll:SetColor(ply:GetColor())
-        ragdoll:SetSkin(ply:GetSkin())
-        ragdoll:SetOwner(ply)
-        ragdoll:Spawn()
-        ragdoll:Activate()
-
-        ragdoll:SetCollisionGroup(COLLISION_GROUP_WEAPON)
-
-        ragdoll.sid = ply:SteamID()
-    end
-
-    ragdoll.deadringer_ragdoll = true
+    self:SpawnRagdoll(ply, dmginfo)
+    self:CloakWeapons(ply, true)
 end
 
 function SWEP:IsCharged()
@@ -439,6 +406,52 @@ function SWEP:Uncloak(ply)
             ent:Remove()
         end
     end
+
+    self:CloakWeapons(ply, false)
+end
+
+function SWEP:SpawnRagdoll(ply, dmginfo)
+    local ragdoll
+    if engine.ActiveGamemode() == 'terrortown' then
+        DamageLog('Dead Ringer: ' .. ply:Nick() .. ' has cloaked after taking ' .. dmginfo:GetDamage() .. ' damage.')
+
+        -- The original addon rewrote CORPSE.Create for some reason... lol
+        ragdoll = CORPSE.Create(ply, dmginfo:GetAttacker(), dmginfo)
+        if not IsValid(ragdoll) then return end
+
+        ragdoll.was_role = ROLE_INNOCENT
+        ragdoll.bomb_wire = false
+
+        CORPSE.SetCredits(ragdoll, 0)
+
+        if TTT2 then
+            ragdoll.was_team = TEAM_INNOCENT
+            STATUS:RemoveStatus(ply, 'deadringer_ready')
+            STATUS:AddTimedStatus(ply, 'deadringer_cloaked', self.CVarCloakTime:GetInt(), true)
+        end
+    else
+        ragdoll = ents.Create('prop_ragdoll')
+        ragdoll:SetPos(ply:GetPos())
+        ragdoll:SetModel(ply:GetModel())
+        ragdoll:SetAngles(ply:GetAngles())
+        ragdoll:SetColor(ply:GetColor())
+        ragdoll:SetSkin(ply:GetSkin())
+        ragdoll:SetOwner(ply)
+        ragdoll:Spawn()
+        ragdoll:Activate()
+        ragdoll:SetCollisionGroup(COLLISION_GROUP_WEAPON)
+
+        ragdoll.sid = ply:SteamID()
+    end
+
+    ragdoll.deadringer_ragdoll = true
+end
+
+function SWEP:CloakWeapons(ply, cloaked)
+    net.Start('DR.WeaponCloak')
+        net.WriteEntity(ply)
+        net.WriteBool(cloaked)
+    net.Broadcast()
 end
 
 function SWEP:DrawHUD()
@@ -467,16 +480,31 @@ end
 
 if SERVER then
     util.AddNetworkString('DR.Cloak')
+    util.AddNetworkString('DR.WeaponCloak')
 else
     net.Receive('DR.Cloak', function()
+        local cloak = net.ReadBool()
         local ply = LocalPlayer()
         if not IsValid(ply) then return end
 
-        local cloak = net.ReadBool()
         if cloak then
             ply:GetViewModel():SetMaterial('models/props_c17/fisheyelens')
         else
             ply:GetViewModel():SetMaterial('models/weapons/v_crowbar.mdl')
+        end
+    end)
+
+    net.Receive('DR.WeaponCloak', function()
+        local ply = net.ReadEntity()
+        local cloak = net.ReadBool()
+
+        if not IsValid(ply) then return end
+
+        for _, wep in ipairs(ply:GetWeapons()) do
+            if not IsValid(wep) then continue end
+            if wep:GetNoDraw() == cloak then continue end
+
+            wep:SetNoDraw(cloak)
         end
     end)
 end

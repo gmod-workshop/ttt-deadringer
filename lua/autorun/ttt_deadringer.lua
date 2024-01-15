@@ -102,16 +102,18 @@ if CLIENT then
 	hook.Add('InitPostEntity', 'DeadringerInitPostEntity', function()
 		if LANG == nil then return end
 
-		LANG.AddToLanguage('english', 'deadringer_name', 'Dead Ringer')
-		LANG.AddToLanguage('english', 'deadringer_desc', 'A watch that feigns your death when you take damage. You will be cloaked for a short time and your attacker will be fooled.')
+		local lang = TTT2 and 'en' or 'english'
+
+		LANG.AddToLanguage(lang, 'deadringer_name', 'Dead Ringer')
+		LANG.AddToLanguage(lang, 'deadringer_desc', 'A watch that feigns your death when you take damage. You will be cloaked for a short time and your attacker will be fooled.')
 	end)
 end
 
 -- TTT ULX Compatibility
 
 hook.Add('TTTUlxInitCustomCVar', 'DeadringerTTTUlxInitCustomCVar', function(name)
-	ULib.replicatedWritableCvar('ttt_deadringer_chargetime', 'rep_ttt_deadringer_chargetime', GetConVar('ttt_deadringer_chargetime'):GetInt(), true, false, name)
-	ULib.replicatedWritableCvar('ttt_deadringer_cloaktime', 'rep_ttt_deadringer_cloaktime', GetConVar('ttt_deadringer_cloaktime'):GetInt(), true, false, name)
+	ULib.replicatedWritableCvar('ttt_deadringer_chargetime', 'rep_ttt_deadringer_chargetime', GetConVar('ttt_deadringer_chargetime'):GetFloat(), true, false, name)
+	ULib.replicatedWritableCvar('ttt_deadringer_cloaktime', 'rep_ttt_deadringer_cloaktime', GetConVar('ttt_deadringer_cloaktime'):GetFloat(), true, false, name)
 	ULib.replicatedWritableCvar('ttt_deadringer_damage_reduction', 'rep_ttt_deadringer_damage_reduction', GetConVar('ttt_deadringer_damage_reduction'):GetFloat(), true, false, name)
 	ULib.replicatedWritableCvar('ttt_deadringer_damage_reduction_time', 'rep_ttt_deadringer_damage_reduction_time', GetConVar('ttt_deadringer_damage_reduction_time'):GetFloat(), true, false, name)
 	ULib.replicatedWritableCvar('ttt_deadringer_damage_reduction_initial', 'rep_ttt_deadringer_damage_reduction_initial', GetConVar('ttt_deadringer_damage_reduction_initial'):GetFloat(), true, false, name)
