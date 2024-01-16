@@ -41,6 +41,9 @@ end
 -- ConVars
 
 local flags = {FCVAR_SERVER_CAN_EXECUTE, FCVAR_ARCHIVE, FCVAR_REPLICATED}
+if TTT2 then
+	table.insert(flags, FCVAR_NOTIFY)
+end
 
 CreateConVar('ttt_deadringer_chargetime', '20', flags, 'Time it takes to recharge the Dead Ringer.')
 CreateConVar('ttt_deadringer_cloaktime', '7', flags, 'Time that the Dead Ringer will cloak you for.')
@@ -106,86 +109,28 @@ if CLIENT then
 
 		LANG.AddToLanguage(lang, 'deadringer_name', 'Dead Ringer')
 		LANG.AddToLanguage(lang, 'deadringer_desc', 'A watch that feigns your death when you take damage. You will be cloaked for a short time and your attacker will be fooled.')
+
+		LANG.AddToLanguage(lang, 'label_ttt_deadringer_chargetime', 'Charge Time')
+		LANG.AddToLanguage(lang, 'help_ttt_deadringer_chargetime', 'Time it takes to recharge the Dead Ringer.')
+
+		LANG.AddToLanguage(lang, 'label_ttt_deadringer_cloaktime', 'Cloak Time')
+		LANG.AddToLanguage(lang, 'help_ttt_deadringer_cloaktime', 'Whether or not the Dead Ringer will convert unused cloak time into charge time.')
+
+		LANG.AddToLanguage(lang, 'label_ttt_deadringer_damage_reduction', 'Damage Reduction')
+		LANG.AddToLanguage(lang, 'help_ttt_deadringer_damage_reduction', 'Damage reduction while cloaked.')
+
+		LANG.AddToLanguage(lang, 'label_ttt_deadringer_damage_reduction_time', 'Damage Reduction Time')
+		LANG.AddToLanguage(lang, 'help_ttt_deadringer_damage_reduction_time', 'Percentage of damage reduction time while cloaked. (0.5 = 50%)')
+
+		LANG.AddToLanguage(lang, 'label_ttt_deadringer_damage_reduction_initial', 'Damage Reduction Initial')
+		LANG.AddToLanguage(lang, 'help_ttt_deadringer_damage_reduction_initial', 'Percentage of damage reduction for the initial hit which triggers the Dead Ringer. (0.75 = 75%)')
 	end)
 end
 
--- TTT ULX Compatibility
+hook.Add('Initialize', 'DeadringerInitialize', function()
+	-- TTT2 Compatibility
 
-hook.Add('TTTUlxInitCustomCVar', 'DeadringerTTTUlxInitCustomCVar', function(name)
-	ULib.replicatedWritableCvar('ttt_deadringer_chargetime', 'rep_ttt_deadringer_chargetime', GetConVar('ttt_deadringer_chargetime'):GetFloat(), true, false, name)
-	ULib.replicatedWritableCvar('ttt_deadringer_cloaktime', 'rep_ttt_deadringer_cloaktime', GetConVar('ttt_deadringer_cloaktime'):GetFloat(), true, false, name)
-	ULib.replicatedWritableCvar('ttt_deadringer_damage_reduction', 'rep_ttt_deadringer_damage_reduction', GetConVar('ttt_deadringer_damage_reduction'):GetFloat(), true, false, name)
-	ULib.replicatedWritableCvar('ttt_deadringer_damage_reduction_time', 'rep_ttt_deadringer_damage_reduction_time', GetConVar('ttt_deadringer_damage_reduction_time'):GetFloat(), true, false, name)
-	ULib.replicatedWritableCvar('ttt_deadringer_damage_reduction_initial', 'rep_ttt_deadringer_damage_reduction_initial', GetConVar('ttt_deadringer_damage_reduction_initial'):GetFloat(), true, false, name)
-	ULib.replicatedWritableCvar('ttt_deadringer_cloaktime_reuse', 'rep_ttt_deadringer_cloaktime_reuse', GetConVar('ttt_deadringer_cloaktime_reuse'):GetBool(), true, false, name)
-end)
-
-if CLIENT then
-	hook.Add('TTTUlxModifyAddonSettings', 'DeadringerTTTUlxModifyAddonSettings', function(panel)
-		local root = xlib.makelistlayout{w = 415, h = 318, parent = xgui.null}
-
-		-- Basic Settings
-		local basicCategory = vgui.Create('DCollapsibleCategory', root)
-		basicCategory:SetSize(390, 50)
-		basicCategory:SetExpanded(1)
-		basicCategory:SetLabel('Basic Settings')
-
-		local basicList = vgui.Create('DPanelList', basicCategory)
-		basicList:SetPos(5, 25)
-		basicList:SetSize(390, 150)
-		basicList:SetSpacing(5)
-
-		local chargeTime = xlib.makeslider{label = 'Charge Time (def. 10)', repconvar = 'rep_ttt_deadringer_chargetime', min = 1, max = 60, decimal = 0, parent = basicList}
-		basicList:AddItem(chargeTime)
-
-		-- Cloak Settings
-		local cloakCategory = vgui.Create('DCollapsibleCategory', root)
-		cloakCategory:SetSize(390, 50)
-		cloakCategory:SetExpanded(1)
-		cloakCategory:SetLabel('Cloak Settings')
-
-		local cloakList = vgui.Create('DPanelList', cloakCategory)
-		cloakList:SetPos(5, 25)
-		cloakList:SetSize(390, 150)
-		cloakList:SetSpacing(5)
-
-		local cloakTime = xlib.makeslider{label = 'Cloak Time (def. 6)', repconvar = 'rep_ttt_deadringer_cloaktime', min = 1, max = 60, decimal = 0, parent = basicList}
-		cloakList:AddItem(cloakTime)
-
-		local cloakTimeReuse = xlib.makecheckbox{label = 'Cloak Time Reuse (def. 1)', repconvar = 'rep_ttt_deadringer_cloaktime_reuse', parent = cloakList}
-		cloakList:AddItem(cloakTimeReuse)
-
-		-- Damage Reduction Settings
-		local damageCategory = vgui.Create('DCollapsibleCategory', root)
-		damageCategory:SetSize(390, 50)
-		damageCategory:SetExpanded(1)
-		damageCategory:SetLabel('Damage Reduction Settings')
-
-		local damageList = vgui.Create('DPanelList', damageCategory)
-		damageList:SetPos(5, 25)
-		damageList:SetSize(390, 150)
-		damageList:SetSpacing(5)
-
-		local damageReduction = xlib.makeslider{label = 'Damage Reduction (def. 0.65)', repconvar = 'rep_ttt_deadringer_damage_reduction', min = 0, max = 1, decimal = 2, parent = damageList}
-		damageList:AddItem(damageReduction)
-
-		local damageReductionTime = xlib.makeslider{label = 'Damage Reduction Time (def. 0.5)', repconvar = 'rep_ttt_deadringer_damage_reduction_time', min = 0, max = 60, decimal = 2, parent = damageList}
-		damageList:AddItem(damageReductionTime)
-
-		local damageReductionInitial = xlib.makeslider{label = 'Damage Reduction Initial (def. 0.75)', repconvar = 'rep_ttt_deadringer_damage_reduction_initial', min = 0, max = 1, decimal = 2, parent = damageList}
-		damageList:AddItem(damageReductionInitial)
-
-		xgui.hookEvent('onProcessModules', nil, root.processModules)
-		xgui.addSubModule('Dead Ringer', root, nil, panel)
-	end)
-end
-
--- TTT2 Compatibility
-
-if CLIENT then
-	hook.Add('Initialize', 'DeadringerInitialize', function()
-		if not TTT2 or STATUS == nil then return end
-
+	if CLIENT and TTT2 and STATUS then
 		STATUS:RegisterStatus('deadringer_cloaked', {
 			hud = Material('vgui/ttt/hud_icon_deadringer.png'),
 			type = 'default'
@@ -197,7 +142,7 @@ if CLIENT then
 			DrawInfo = function()
 				local status = LocalPlayer():GetNW2Int('DRStatus', 0)
 
-				return status == 1 and 'READY' or 'INACTIVE'
+				return status == 1 and 'on' or 'off'
 			end
 		})
 
@@ -205,5 +150,78 @@ if CLIENT then
 			hud = Material('vgui/ttt/hud_icon_deadringer.png'),
 			type = 'bad'
 		})
-	end)
-end
+		return
+	end
+
+	-- TTT ULX Compatibility
+	if CLIENT and not TTT2 then
+		hook.Add('TTTUlxModifyAddonSettings', 'DeadringerTTTUlxModifyAddonSettings', function(panel)
+			local root = xlib.makelistlayout{w = 415, h = 318, parent = xgui.null}
+
+			-- Basic Settings
+			local basicCategory = vgui.Create('DCollapsibleCategory', root)
+			basicCategory:SetSize(390, 50)
+			basicCategory:SetExpanded(1)
+			basicCategory:SetLabel('Basic Settings')
+
+			local basicList = vgui.Create('DPanelList', basicCategory)
+			basicList:SetPos(5, 25)
+			basicList:SetSize(390, 150)
+			basicList:SetSpacing(5)
+
+			local chargeTime = xlib.makeslider{label = 'Charge Time (def. 10)', repconvar = 'rep_ttt_deadringer_chargetime', min = 1, max = 60, decimal = 0, parent = basicList}
+			basicList:AddItem(chargeTime)
+
+			-- Cloak Settings
+			local cloakCategory = vgui.Create('DCollapsibleCategory', root)
+			cloakCategory:SetSize(390, 50)
+			cloakCategory:SetExpanded(1)
+			cloakCategory:SetLabel('Cloak Settings')
+
+			local cloakList = vgui.Create('DPanelList', cloakCategory)
+			cloakList:SetPos(5, 25)
+			cloakList:SetSize(390, 150)
+			cloakList:SetSpacing(5)
+
+			local cloakTime = xlib.makeslider{label = 'Cloak Time (def. 6)', repconvar = 'rep_ttt_deadringer_cloaktime', min = 1, max = 60, decimal = 0, parent = basicList}
+			cloakList:AddItem(cloakTime)
+
+			local cloakTimeReuse = xlib.makecheckbox{label = 'Cloak Time Reuse (def. 1)', repconvar = 'rep_ttt_deadringer_cloaktime_reuse', parent = cloakList}
+			cloakList:AddItem(cloakTimeReuse)
+
+			-- Damage Reduction Settings
+			local damageCategory = vgui.Create('DCollapsibleCategory', root)
+			damageCategory:SetSize(390, 50)
+			damageCategory:SetExpanded(1)
+			damageCategory:SetLabel('Damage Reduction Settings')
+
+			local damageList = vgui.Create('DPanelList', damageCategory)
+			damageList:SetPos(5, 25)
+			damageList:SetSize(390, 150)
+			damageList:SetSpacing(5)
+
+			local damageReduction = xlib.makeslider{label = 'Damage Reduction (def. 0.65)', repconvar = 'rep_ttt_deadringer_damage_reduction', min = 0, max = 1, decimal = 2, parent = damageList}
+			damageList:AddItem(damageReduction)
+
+			local damageReductionTime = xlib.makeslider{label = 'Damage Reduction Time (def. 0.5)', repconvar = 'rep_ttt_deadringer_damage_reduction_time', min = 0, max = 60, decimal = 2, parent = damageList}
+			damageList:AddItem(damageReductionTime)
+
+			local damageReductionInitial = xlib.makeslider{label = 'Damage Reduction Initial (def. 0.75)', repconvar = 'rep_ttt_deadringer_damage_reduction_initial', min = 0, max = 1, decimal = 2, parent = damageList}
+			damageList:AddItem(damageReductionInitial)
+
+			xgui.hookEvent('onProcessModules', nil, root.processModules)
+			xgui.addSubModule('Dead Ringer', root, nil, panel)
+		end)
+	end
+
+	if SERVER and not TTT2 then
+		hook.Add('TTTUlxInitCustomCVar', 'DeadringerTTTUlxInitCustomCVar', function(name)
+			ULib.replicatedWritableCvar('ttt_deadringer_chargetime', 'rep_ttt_deadringer_chargetime', GetConVar('ttt_deadringer_chargetime'):GetFloat(), true, false, name)
+			ULib.replicatedWritableCvar('ttt_deadringer_cloaktime', 'rep_ttt_deadringer_cloaktime', GetConVar('ttt_deadringer_cloaktime'):GetFloat(), true, false, name)
+			ULib.replicatedWritableCvar('ttt_deadringer_damage_reduction', 'rep_ttt_deadringer_damage_reduction', GetConVar('ttt_deadringer_damage_reduction'):GetFloat(), true, false, name)
+			ULib.replicatedWritableCvar('ttt_deadringer_damage_reduction_time', 'rep_ttt_deadringer_damage_reduction_time', GetConVar('ttt_deadringer_damage_reduction_time'):GetFloat(), true, false, name)
+			ULib.replicatedWritableCvar('ttt_deadringer_damage_reduction_initial', 'rep_ttt_deadringer_damage_reduction_initial', GetConVar('ttt_deadringer_damage_reduction_initial'):GetFloat(), true, false, name)
+			ULib.replicatedWritableCvar('ttt_deadringer_cloaktime_reuse', 'rep_ttt_deadringer_cloaktime_reuse', GetConVar('ttt_deadringer_cloaktime_reuse'):GetBool(), true, false, name)
+		end)
+	end
+end)
