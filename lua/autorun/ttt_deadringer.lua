@@ -51,6 +51,8 @@ CreateConVar('ttt_deadringer_damage_reduction', '0.65', flags, 'Damage reduction
 CreateConVar('ttt_deadringer_damage_reduction_time', '3', flags, 'Damage reduction time while cloaked. (1.0 = 1 second of damage reduction)')
 CreateConVar('ttt_deadringer_damage_reduction_initial', '0.75', flags, 'Percentage of damage reduction for the initial hit which triggers the Dead Ringer. (0.75 = 75%)')
 CreateConVar('ttt_deadringer_cloaktime_reuse', '0', flags, 'Whether or not the Dead Ringer will convert unused cloak time into charge time.')
+CreateConVar('ttt_deadringer_corpse_role', '0', flags, 'Whether or not the Dead Ringer will show the real role of the player on the corpse.')
+CreateConVar('ttt_deadringer_corpse_confirm', '1', flags, 'Whether or not the Dead Ringer will confirm the death of the player on the corpse.')
 
 -- Sandbox Compatibility
 
@@ -96,6 +98,14 @@ hook.Add('PopulateToolMenu', 'DeadringerPopulateToolMenu', function()
 
 		panel:NumSlider('Damage Reduction Initial', 'ttt_deadringer_damage_reduction_initial', 0, 1, 2)
 		panel:ControlHelp('Percentage of damage reduction for the initial hit which triggers the Dead Ringer. (0.75 = 75%)')
+
+		panel:Help('Corpse Settings')
+
+		panel:CheckBox('Show Role', 'ttt_deadringer_corpse_role')
+		panel:ControlHelp('Whether or not the Dead Ringer will show the real role of the player on the corpse.')
+
+		panel:CheckBox('Confirm Death', 'ttt_deadringer_corpse_confirm')
+		panel:ControlHelp('Whether or not the Dead Ringer will confirm the death of the player on the corpse.')
 	end)
 end)
 
@@ -124,6 +134,15 @@ if CLIENT then
 
 		LANG.AddToLanguage(lang, 'label_ttt_deadringer_damage_reduction_initial', 'Damage Reduction Initial')
 		LANG.AddToLanguage(lang, 'help_ttt_deadringer_damage_reduction_initial', 'Percentage of damage reduction for the initial hit which triggers the Dead Ringer. (0.75 = 75%)')
+
+		LANG.AddToLanguage(lang, 'label_ttt_deadringer_cloaktime_reuse', 'Cloak Time Reuse')
+		LANG.AddToLanguage(lang, 'help_ttt_deadringer_cloaktime_reuse', 'Whether or not the Dead Ringer will convert unused cloak time into charge time.')
+
+		LANG.AddToLanguage(lang, 'label_ttt_deadringer_corpse_role', 'Show Role')
+		LANG.AddToLanguage(lang, 'help_ttt_deadringer_corpse_role', 'Whether or not the Dead Ringer will show the real role of the player on the corpse.')
+
+		LANG.AddToLanguage(lang, 'label_ttt_deadringer_corpse_confirm', 'Confirm Death')
+		LANG.AddToLanguage(lang, 'help_ttt_deadringer_corpse_confirm', 'Whether or not the Dead Ringer will confirm the death of the player on the corpse.')
 	end)
 end
 
@@ -203,11 +222,28 @@ hook.Add('Initialize', 'DeadringerInitialize', function()
 			local damageReduction = xlib.makeslider{label = 'Damage Reduction (def. 0.65)', repconvar = 'rep_ttt_deadringer_damage_reduction', min = 0, max = 1, decimal = 2, parent = damageList}
 			damageList:AddItem(damageReduction)
 
-			local damageReductionTime = xlib.makeslider{label = 'Damage Reduction Time (def. 0.5)', repconvar = 'rep_ttt_deadringer_damage_reduction_time', min = 0, max = 60, decimal = 2, parent = damageList}
+			local damageReductionTime = xlib.makeslider{label = 'Damage Reduction Time (def. 3)', repconvar = 'rep_ttt_deadringer_damage_reduction_time', min = 0, max = 60, decimal = 1, parent = damageList}
 			damageList:AddItem(damageReductionTime)
 
 			local damageReductionInitial = xlib.makeslider{label = 'Damage Reduction Initial (def. 0.75)', repconvar = 'rep_ttt_deadringer_damage_reduction_initial', min = 0, max = 1, decimal = 2, parent = damageList}
 			damageList:AddItem(damageReductionInitial)
+
+			-- Corpse Settings
+			local corpseCategory = vgui.Create('DCollapsibleCategory', root)
+			corpseCategory:SetSize(390, 50)
+			corpseCategory:SetExpanded(1)
+			corpseCategory:SetLabel('Corpse Settings')
+
+			local corpseList = vgui.Create('DPanelList', corpseCategory)
+			corpseList:SetPos(5, 25)
+			corpseList:SetSize(390, 150)
+			corpseList:SetSpacing(5)
+
+			local corpseRole = xlib.makecheckbox{label = 'Show Role (def. 0)', repconvar = 'rep_ttt_deadringer_corpse_role', parent = corpseList}
+			corpseList:AddItem(corpseRole)
+
+			local corpseConfirm = xlib.makecheckbox{label = 'Confirm Death (def. 1)', repconvar = 'rep_ttt_deadringer_corpse_confirm', parent = corpseList}
+			corpseList:AddItem(corpseConfirm)
 
 			xgui.hookEvent('onProcessModules', nil, root.processModules)
 			xgui.addSubModule('Dead Ringer', root, nil, panel)
@@ -222,6 +258,8 @@ hook.Add('Initialize', 'DeadringerInitialize', function()
 			ULib.replicatedWritableCvar('ttt_deadringer_damage_reduction_time', 'rep_ttt_deadringer_damage_reduction_time', GetConVar('ttt_deadringer_damage_reduction_time'):GetFloat(), true, false, name)
 			ULib.replicatedWritableCvar('ttt_deadringer_damage_reduction_initial', 'rep_ttt_deadringer_damage_reduction_initial', GetConVar('ttt_deadringer_damage_reduction_initial'):GetFloat(), true, false, name)
 			ULib.replicatedWritableCvar('ttt_deadringer_cloaktime_reuse', 'rep_ttt_deadringer_cloaktime_reuse', GetConVar('ttt_deadringer_cloaktime_reuse'):GetBool(), true, false, name)
+			ULib.replicatedWritableCvar('ttt_deadringer_corpse_role', 'rep_ttt_deadringer_corpse_role', GetConVar('ttt_deadringer_corpse_role'):GetBool(), true, false, name)
+			ULib.replicatedWritableCvar('ttt_deadringer_corpse_confirm', 'rep_ttt_deadringer_corpse_confirm', GetConVar('ttt_deadringer_corpse_confirm'):GetBool(), true, false, name)
 		end)
 	end
 end)
