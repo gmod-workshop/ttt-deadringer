@@ -512,63 +512,63 @@ end
 
 if CLIENT and TTT2 then
     function SWEP:AddToSettingsMenu(parent)
-        local form = vgui.CreateTTT2Form(parent, "header_equipment_additional")
+        local form = vgui.CreateTTT2Form(parent, 'header_equipment_additional')
 
         form:MakeHelp({
-            label = "help_ttt_deadringer_chargetime"
+            label = 'help_ttt_deadringer_chargetime'
         })
 
         form:MakeSlider({
-            label = "label_ttt_deadringer_chargetime",
-            serverConvar = "ttt_deadringer_chargetime",
+            label = 'label_ttt_deadringer_chargetime',
+            serverConvar = 'ttt_deadringer_chargetime',
             min = 1,
             max = 60,
             decimal = 0,
         })
 
         form:MakeHelp({
-            label = "help_ttt_deadringer_cloaktime"
+            label = 'help_ttt_deadringer_cloaktime'
         })
 
         form:MakeSlider({
-            label = "label_ttt_deadringer_cloaktime",
-            serverConvar = "ttt_deadringer_cloaktime",
+            label = 'label_ttt_deadringer_cloaktime',
+            serverConvar = 'ttt_deadringer_cloaktime',
             min = 1,
             max = 60,
             decimal = 0,
         })
 
         form:MakeHelp({
-            label = "help_ttt_deadringer_damage_reduction"
+            label = 'help_ttt_deadringer_damage_reduction'
         })
 
         form:MakeSlider({
-            label = "label_ttt_deadringer_damage_reduction",
-            serverConvar = "ttt_deadringer_damage_reduction",
+            label = 'label_ttt_deadringer_damage_reduction',
+            serverConvar = 'ttt_deadringer_damage_reduction',
             min = 0,
             max = 60,
             decimal = 2,
         })
 
         form:MakeHelp({
-            label = "help_ttt_deadringer_damage_reduction_time"
+            label = 'help_ttt_deadringer_damage_reduction_time'
         })
 
         form:MakeSlider({
-            label = "label_ttt_deadringer_damage_reduction_time",
-            serverConvar = "ttt_deadringer_damage_reduction_time",
+            label = 'label_ttt_deadringer_damage_reduction_time',
+            serverConvar = 'ttt_deadringer_damage_reduction_time',
             min = 0,
             max = 1,
             decimal = 2,
         })
 
         form:MakeHelp({
-            label = "help_ttt_deadringer_damage_reduction_initial"
+            label = 'help_ttt_deadringer_damage_reduction_initial'
         })
 
         form:MakeSlider({
-            label = "label_ttt_deadringer_damage_reduction_initial",
-            serverConvar = "ttt_deadringer_damage_reduction_initial",
+            label = 'label_ttt_deadringer_damage_reduction_initial',
+            serverConvar = 'ttt_deadringer_damage_reduction_initial',
             min = 0,
             max = 1,
             decimal = 2,
