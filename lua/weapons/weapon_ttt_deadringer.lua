@@ -90,6 +90,7 @@ function SWEP:Initialize()
     self.CVarDamageReductionTime = GetConVar('ttt_deadringer_damage_reduction_time')
     self.CVarDamageReductionInitial = GetConVar('ttt_deadringer_damage_reduction_initial')
     self.CVarCloakTimeReuse = GetConVar('ttt_deadringer_cloaktime_reuse')
+    self.CVarCorpseRole = GetConVar('ttt_deadringer_corpse_role')
 end
 
 function SWEP:SetupHooks()
@@ -419,13 +420,21 @@ function SWEP:SpawnRagdoll(ply, dmginfo)
         ragdoll = CORPSE.Create(ply, dmginfo:GetAttacker(), dmginfo)
         if not IsValid(ragdoll) then return end
 
-        ragdoll.was_role = ROLE_INNOCENT
+        local useRole = self.CVarCorpseRole:GetBool()
+        if not useRole then
+            ragdoll.was_role = ROLE_INNOCENT
+        end
+
         ragdoll.bomb_wire = false
 
         CORPSE.SetCredits(ragdoll, 0)
 
         if TTT2 then
-            ragdoll.was_team = TEAM_INNOCENT
+            if not useRole then
+            local role = roles.GetByIndex(ROLE_INNOCENT)
+                ragdoll.was_team = role.defaultTeam
+                ragdoll.role_color = role.color
+            end
             STATUS:RemoveStatus(ply, 'deadringer_ready')
             STATUS:AddTimedStatus(ply, 'deadringer_cloaked', self.CVarCloakTime:GetInt(), true)
         end
@@ -509,6 +518,30 @@ else
     end)
 end
 
+if SERVER and TTT2 then
+    hook.Add('TTTBodyFound', 'DR.TTTBodyFound', function(ply, victim, ragdoll)
+        -- We have to manually confirm the body if the ragdoll is a Dead Ringer ragdoll
+        -- because TTT2 checks if the victim is alive and cloaked player is still alive
+
+        if not IsValid(ply) or not IsValid(victim) or not IsValid(ragdoll) then return end
+        if not ragdoll.deadringer_ragdoll then return end
+
+        local confirm = GetConVar('ttt_deadringer_corpse_confirm'):GetBool()
+        if not confirm then return end
+
+        victim:ConfirmPlayer(true)
+
+        -- We have to create a fake player which has GetSubRole, GetTeam, and EntIndex functions
+        local fakePlayer = {
+            GetSubRole = function() return ragdoll.was_role end,
+            GetTeam = function() return ragdoll.was_team end,
+            EntIndex = function() return victim:EntIndex() end
+        }
+
+        SendPlayerToEveryone(fakePlayer)
+    end)
+end
+
 
 if CLIENT and TTT2 then
     function SWEP:AddToSettingsMenu(parent)
@@ -572,6 +605,33 @@ if CLIENT and TTT2 then
             min = 0,
             max = 1,
             decimal = 2,
+        })
+
+        form:MakeHelp({
+            label = 'help_ttt_deadringer_cloaktime_reuse'
+        })
+
+        form:MakeCheckBox({
+            label = 'label_ttt_deadringer_cloaktime_reuse',
+            serverConvar = 'ttt_deadringer_cloaktime_reuse'
+        })
+
+        form:MakeHelp({
+            label = 'help_ttt_deadringer_corpse_role'
+        })
+
+        form:MakeCheckBox({
+            label = 'label_ttt_deadringer_corpse_role',
+            serverConvar = 'ttt_deadringer_corpse_role'
+        })
+
+        form:MakeHelp({
+            label = 'help_ttt_deadringer_corpse_confirm'
+        })
+
+        form:MakeCheckBox({
+            label = 'label_ttt_deadringer_corpse_confirm',
+            serverConvar = 'ttt_deadringer_corpse_confirm'
         })
     end
 end
