@@ -48,7 +48,7 @@ end
 CreateConVar('ttt_deadringer_chargetime', '20', flags, 'Time it takes to recharge the Dead Ringer.')
 CreateConVar('ttt_deadringer_cloaktime', '7', flags, 'Time that the Dead Ringer will cloak you for.')
 CreateConVar('ttt_deadringer_damage_reduction', '0.65', flags, 'Damage reduction while cloaked.')
-CreateConVar('ttt_deadringer_damage_reduction_time', '3', flags, 'Damage reduction time while cloaked.')
+CreateConVar('ttt_deadringer_damage_reduction_time', '3', flags, 'Damage reduction time while cloaked. (1.0 = 1 second of damage reduction)')
 CreateConVar('ttt_deadringer_damage_reduction_initial', '0.75', flags, 'Percentage of damage reduction for the initial hit which triggers the Dead Ringer. (0.75 = 75%)')
 CreateConVar('ttt_deadringer_cloaktime_reuse', '0', flags, 'Whether or not the Dead Ringer will convert unused cloak time into charge time.')
 
@@ -88,11 +88,11 @@ hook.Add('PopulateToolMenu', 'DeadringerPopulateToolMenu', function()
 
 		panel:Help('Damage Reduction Settings')
 
-		panel:NumSlider('Damage Reduction', 'ttt_deadringer_damage_reduction', 0, 60, 2)
+		panel:NumSlider('Damage Reduction', 'ttt_deadringer_damage_reduction', 0, 1, 2)
 		panel:ControlHelp('Damage reduction while cloaked.')
 
-		panel:NumSlider('Damage Reduction Time', 'ttt_deadringer_damage_reduction_time', 0, 1, 2)
-		panel:ControlHelp('Percentage of damage reduction time while cloaked. (0.5 = 50%)')
+		panel:NumSlider('Damage Reduction Time', 'ttt_deadringer_damage_reduction_time', 0, 60, 2)
+		panel:ControlHelp('Damage reduction time while cloaked. (1.0 = 1 second of damage reduction)')
 
 		panel:NumSlider('Damage Reduction Initial', 'ttt_deadringer_damage_reduction_initial', 0, 1, 2)
 		panel:ControlHelp('Percentage of damage reduction for the initial hit which triggers the Dead Ringer. (0.75 = 75%)')
@@ -120,7 +120,7 @@ if CLIENT then
 		LANG.AddToLanguage(lang, 'help_ttt_deadringer_damage_reduction', 'Damage reduction while cloaked.')
 
 		LANG.AddToLanguage(lang, 'label_ttt_deadringer_damage_reduction_time', 'Damage Reduction Time')
-		LANG.AddToLanguage(lang, 'help_ttt_deadringer_damage_reduction_time', 'Percentage of damage reduction time while cloaked. (0.5 = 50%)')
+		LANG.AddToLanguage(lang, 'help_ttt_deadringer_damage_reduction_time', 'Damage reduction time while cloaked. (1.0 = 1 second of damage reduction)')
 
 		LANG.AddToLanguage(lang, 'label_ttt_deadringer_damage_reduction_initial', 'Damage Reduction Initial')
 		LANG.AddToLanguage(lang, 'help_ttt_deadringer_damage_reduction_initial', 'Percentage of damage reduction for the initial hit which triggers the Dead Ringer. (0.75 = 75%)')

@@ -546,7 +546,7 @@ if CLIENT and TTT2 then
             label = 'label_ttt_deadringer_damage_reduction',
             serverConvar = 'ttt_deadringer_damage_reduction',
             min = 0,
-            max = 60,
+            max = 1,
             decimal = 2,
         })
 
@@ -558,8 +558,8 @@ if CLIENT and TTT2 then
             label = 'label_ttt_deadringer_damage_reduction_time',
             serverConvar = 'ttt_deadringer_damage_reduction_time',
             min = 0,
-            max = 1,
-            decimal = 2,
+            max = 60,
+            decimal = 1,
         })
 
         form:MakeHelp({
