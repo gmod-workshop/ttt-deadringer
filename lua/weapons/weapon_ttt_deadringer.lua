@@ -245,9 +245,37 @@ function SWEP:Think()
                 surface.PlaySound('ttt/recharged.wav')
             end
         end
+
+        if CLIENT then
+            for _, wep in ipairs(owner:GetWeapons()) do
+                if not IsValid(wep) then continue end
+                if wep.DRNoDraw == nil then
+                    wep.DRNoDraw = wep:GetNoDraw()
+                end
+
+                if wep:GetNoDraw() and not wep.DRNoDraw then
+                    wep:SetNoDraw(false)
+                end
+            end
+        end
     else
-        if status == CLOAK.CLOAKED and chargeTime < CurTime() then
-            self:Uncloak(owner)
+        if status == CLOAK.CLOAKED then
+            if CLIENT then
+                for _, wep in ipairs(owner:GetWeapons()) do
+                    if not IsValid(wep) then continue end
+                    if wep.DRNoDraw == nil then
+                        wep.DRNoDraw = wep:GetNoDraw()
+                    end
+
+                    if not wep:GetNoDraw() then
+                        wep:SetNoDraw(true)
+                    end
+                end
+            end
+
+            if chargeTime < CurTime() then
+                self:Uncloak(owner)
+             end
         end
     end
 end
@@ -331,7 +359,6 @@ function SWEP:Cloak(ply, dmginfo)
     ply:DrawShadow(false)
     ply:Flashlight(false)
     ply:AllowFlashlight(false)
-    ply:SetFOV(0, 0.2)
     ply:SetNoDraw(true)
 
     local weapon = ply:GetActiveWeapon()
@@ -340,7 +367,6 @@ function SWEP:Cloak(ply, dmginfo)
     end
 
     self:SpawnRagdoll(ply, dmginfo)
-    self:CloakWeapons(ply, true)
 end
 
 function SWEP:IsCharged()
@@ -407,8 +433,6 @@ function SWEP:Uncloak(ply)
             ent:Remove()
         end
     end
-
-    self:CloakWeapons(ply, false)
 end
 
 function SWEP:SpawnRagdoll(ply, dmginfo)
@@ -494,13 +518,6 @@ function SWEP:ChooseRole(ply)
     return roles.GetByName('innocent').index
 end
 
-function SWEP:CloakWeapons(ply, cloaked)
-    net.Start('DR.WeaponCloak')
-        net.WriteEntity(ply)
-        net.WriteBool(cloaked)
-    net.Broadcast()
-end
-
 function SWEP:DrawHUD()
     if TTT2 then return end -- TTT2 handles this itself through STATUS:AddStatus
 
@@ -527,7 +544,6 @@ end
 
 if SERVER then
     util.AddNetworkString('DR.Cloak')
-    util.AddNetworkString('DR.WeaponCloak')
 else
     net.Receive('DR.Cloak', function()
         local cloak = net.ReadBool()
@@ -538,20 +554,6 @@ else
             ply:GetViewModel():SetMaterial('models/props_c17/fisheyelens')
         else
             ply:GetViewModel():SetMaterial('models/weapons/v_crowbar.mdl')
-        end
-    end)
-
-    net.Receive('DR.WeaponCloak', function()
-        local ply = net.ReadEntity()
-        local cloak = net.ReadBool()
-
-        if not IsValid(ply) then return end
-
-        for _, wep in ipairs(ply:GetWeapons()) do
-            if not IsValid(wep) then continue end
-            if wep:GetNoDraw() == cloak then continue end
-
-            wep:SetNoDraw(cloak)
         end
     end)
 end
