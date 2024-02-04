@@ -2,6 +2,10 @@
 
 Inspired from [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [v2.1.1]
+### Fixed
+- Fixed an issue where the ammo pickup sound was being played when buying the equipment from the shop
+
 ## [v2.0.0]
 ### Added
 - Added new setting `ttt_deadringer_corpse_mode`

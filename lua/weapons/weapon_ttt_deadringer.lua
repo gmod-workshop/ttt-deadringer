@@ -52,9 +52,9 @@ if CLIENT then
 end
 
 SWEP.Primary.ClipSize = -1
-SWEP.Primary.DefaultClip = 4
+SWEP.Primary.DefaultClip = -1
 SWEP.Primary.Automatic = false
-SWEP.Primary.Ammo = 'AR2AltFire'
+SWEP.Primary.Ammo = 'none'
 SWEP.Primary.Delay = 0.5
 
 SWEP.Secondary.ClipSize = -1

@@ -19,7 +19,7 @@ Includes an individual shop icon.
 - ttt_deadringer_damage_reduction_initial (def: 0.75) - Percentage of damage reduction for the initial hit which triggers the Dead Ringer. (0.75 = 75%)
 - ttt_deadringer_cloaktime_reuse (def: 0) - Whether or not the Dead Ringer will convert unused cloak time into charge time.
 - ttt_deadringer_corpse_mode (def: 0) - Whether or not the Dead Ringer will show a fake role, real role, or spoofed innocent role.
-- ttt_deadringer_corpse_confirm (def: 1) - Whether or not the Dead Ringer will confirm the death of the player on the corpse.
+- ttt_deadringer_corpse_confirm (def: 0) - Whether or not the Dead Ringer will confirm the death of the player on the corpse.
 
 ## Server Info
 
