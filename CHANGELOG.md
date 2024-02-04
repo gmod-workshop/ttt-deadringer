@@ -1,12 +1,22 @@
-# CHANGELOG
+# Changelog
 
-Inspired from [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
+All notable changes to this project will be documented in this file.
 
-## [v2.1.1]
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Fixed
+- Fixed a cloaked player's weapons still be visible to other players
+
+## [2.1.1]
+
 ### Fixed
 - Fixed an issue where the ammo pickup sound was being played when buying the equipment from the shop
 
-## [v2.0.0]
+## [2.0.0]
+
 ### Added
 - Added new setting `ttt_deadringer_corpse_mode`
     - There are currently 3 modes:
@@ -20,7 +30,8 @@ Inspired from [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### Changed
 - Changed the `ttt_deadringer_corpse_confirm` setting to default to off
 
-## [v1.1.0]
+## [1.1.0]
+
 ### Added
 - Added new setting `ttt_deadringer_corpse_role`
     - Determines if a player's real role or a fake innocent role will be shown on the corpse
@@ -28,10 +39,19 @@ Inspired from [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
     - Determines if the fake corpse will confirm the player's role when checked
     - This may be used in tandem with `ttt_deadringer_corpse_role` to confirm fake/real roles
 
-## [v1.0.1]
+## [1.0.1]
+
 ### Fixed
 - Fixed misleading text for the `ttt_deadringer_damage_reduction_time` setting to mention that the value is in absolute seconds and not a percentage.
 
-## [v1.0.0]
+## [1.0.0]
+
 ### Fixed
 - Fixed addon settings not being set correctly for TTT2 (#1)
+
+[Unreleased]: https://github.com/gmod-workshop/ttt-deadringer/compare/2.1.1...HEAD
+[2.1.1]: https://github.com/gmod-workshop/ttt-deadringer/compare/2.0.0...2.1.1
+[2.0.0]: https://github.com/gmod-workshop/ttt-deadringer/compare/1.1.0...2.0.0
+[1.1.0]: https://github.com/gmod-workshop/ttt-deadringer/compare/1.0.1...1.1.0
+[1.0.1]: https://github.com/gmod-workshop/ttt-deadringer/compare/1.0.0...1.0.1
+[1.0.0]: https://github.com/gmod-workshop/ttt-deadringer/releases/tag/1.0.0
