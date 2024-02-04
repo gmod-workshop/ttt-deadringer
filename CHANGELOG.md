@@ -2,6 +2,20 @@
 
 Inspired from [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [v2.0.0]
+### Added
+- Added new setting `ttt_deadringer_corpse_mode`
+    - There are currently 3 modes:
+        * 0 (default) - A corpse with a 'Fake' role/team will be spawned for TTT2, for TTT this will just show innocent
+        * 1 - A corpse will spawn with the player's REAL role (traitors will show as traitors, jackals as jackals, etc.) for both TTT2 and TTT
+        * 2 - A corpse will spawn with a spoofed innocent role (traitors appear as innocent)
+
+### Removed
+- Removed the `ttt_deadringer_corpse_role` setting, use the new `ttt_deadringer_corpse_mode` setting
+
+### Changed
+- Changed the `ttt_deadringer_corpse_confirm` setting to default to off
+
 ## [v1.1.0]
 ### Added
 - Added new setting `ttt_deadringer_corpse_role`

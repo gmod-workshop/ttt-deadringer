@@ -90,7 +90,7 @@ function SWEP:Initialize()
     self.CVarDamageReductionTime = GetConVar('ttt_deadringer_damage_reduction_time')
     self.CVarDamageReductionInitial = GetConVar('ttt_deadringer_damage_reduction_initial')
     self.CVarCloakTimeReuse = GetConVar('ttt_deadringer_cloaktime_reuse')
-    self.CVarCorpseRole = GetConVar('ttt_deadringer_corpse_role')
+    self.CVarCorpseMode = GetConVar('ttt_deadringer_corpse_mode')
 end
 
 function SWEP:SetupHooks()
@@ -412,6 +412,8 @@ function SWEP:Uncloak(ply)
 end
 
 function SWEP:SpawnRagdoll(ply, dmginfo)
+    if CLIENT then return end
+
     local ragdoll
     if engine.ActiveGamemode() == 'terrortown' then
         DamageLog('Dead Ringer: ' .. ply:Nick() .. ' has cloaked after taking ' .. dmginfo:GetDamage() .. ' damage.')
@@ -420,21 +422,16 @@ function SWEP:SpawnRagdoll(ply, dmginfo)
         ragdoll = CORPSE.Create(ply, dmginfo:GetAttacker(), dmginfo)
         if not IsValid(ragdoll) then return end
 
-        local useRole = self.CVarCorpseRole:GetBool()
-        if not useRole then
-            ragdoll.was_role = ROLE_INNOCENT
-        end
-
+        local role = self:ChooseRole(ply)
+        ragdoll.was_role = role
         ragdoll.bomb_wire = false
 
         CORPSE.SetCredits(ragdoll, 0)
 
         if TTT2 then
-            if not useRole then
-            local role = roles.GetByIndex(ROLE_INNOCENT)
-                ragdoll.was_team = role.defaultTeam
-                ragdoll.role_color = role.color
-            end
+            local roleData = roles.GetByIndex(role)
+            ragdoll.was_team = roleData.defaultTeam
+            ragdoll.role_color = roleData.color
             STATUS:RemoveStatus(ply, 'deadringer_ready')
             STATUS:AddTimedStatus(ply, 'deadringer_cloaked', self.CVarCloakTime:GetInt(), true)
         end
@@ -454,6 +451,47 @@ function SWEP:SpawnRagdoll(ply, dmginfo)
     end
 
     ragdoll.deadringer_ragdoll = true
+end
+
+function SWEP:ChooseRole(ply)
+    if engine.ActiveGamemode() ~= 'terrortown' then
+        error('This function is only available in TTT based gamemodes.')
+    end
+
+    if not IsValid(ply) then return end
+
+    local corpseMode = self.CVarCorpseMode:GetInt()
+
+    if not TTT2 then
+        if ply:IsTraitor() then
+            if corpseMode == 0 then
+                return ROLE_NONE
+            elseif corpseMode == 1 then
+                return ply:GetRole()
+            end
+
+            return ROLE_INNOCENT
+        end
+
+        return ply:GetRole()
+    end
+
+    if ply:RoleKnown() then
+        return ply:GetSubRole()
+    end
+
+    local roleData = ply:GetSubRoleData()
+    if roleData.isPublicRole then
+        return roleData.index
+    end
+
+    if corpseMode == 0 then
+        return roles.GetByName('fake').index
+    elseif corpseMode == 1 then
+        return roleData.index
+    end
+
+    return roles.GetByName('innocent').index
 end
 
 function SWEP:CloakWeapons(ply, cloaked)
@@ -519,6 +557,15 @@ else
 end
 
 if SERVER and TTT2 then
+    hook.Add('TTT2ConfirmPlayer', 'DR.TTT2ConfirmPlayer', function(victim, ply, ragdoll)
+        if not IsValid(ply) or not IsValid(ragdoll) then return end
+        if not ragdoll.deadringer_ragdoll then return end
+
+        if ragdoll.was_role == roles.GetByName('fake').index then
+            return false
+        end
+    end)
+
     hook.Add('TTTBodyFound', 'DR.TTTBodyFound', function(ply, victim, ragdoll)
         -- We have to manually confirm the body if the ragdoll is a Dead Ringer ragdoll
         -- because TTT2 checks if the victim is alive and cloaked player is still alive
@@ -526,8 +573,8 @@ if SERVER and TTT2 then
         if not IsValid(ply) or not IsValid(victim) or not IsValid(ragdoll) then return end
         if not ragdoll.deadringer_ragdoll then return end
 
-        local confirm = GetConVar('ttt_deadringer_corpse_confirm'):GetBool()
-        if not confirm then return end
+        local corpseConfirm = GetConVar('ttt_deadringer_corpse_confirm'):GetBool()
+        if not corpseConfirm then return end
 
         victim:ConfirmPlayer(true)
 
@@ -617,12 +664,15 @@ if CLIENT and TTT2 then
         })
 
         form:MakeHelp({
-            label = 'help_ttt_deadringer_corpse_role'
+            label = 'help_ttt_deadringer_corpse_mode'
         })
 
-        form:MakeCheckBox({
-            label = 'label_ttt_deadringer_corpse_role',
-            serverConvar = 'ttt_deadringer_corpse_role'
+        form:MakeSlider({
+            label = 'label_ttt_deadringer_corpse_mode',
+            serverConvar = 'ttt_deadringer_corpse_mode',
+            min = 0,
+            max = 2,
+            decimal = 0,
         })
 
         form:MakeHelp({
