@@ -88,14 +88,29 @@ function SWEP:Initialize()
 
     self.CVarChargeTime = GetConVar('ttt_deadringer_cloak_cooldown')
     self.CVarCloakTime = GetConVar('ttt_deadringer_cloak_duration')
+    self.CVarCloakTimeReuse = GetConVar('ttt_deadringer_cloak_reuse')
+    self.CVarCloakTransparency = GetConVar('ttt_deadringer_cloak_transparency')
+    self.CVarCloakTargetid = GetConVar('ttt_deadringer_cloak_targetid')
+    self.CVarCloakReactivate = GetConVar('ttt_deadringer_cloak_reactivate')
+
+    self.CVarDamageThreshold = GetConVar('ttt_deadringer_damage_threshold')
     self.CVarDamageReduction = GetConVar('ttt_deadringer_damage_reduction')
     self.CVarDamageReductionTime = GetConVar('ttt_deadringer_damage_reduction_time')
     self.CVarDamageReductionInitial = GetConVar('ttt_deadringer_damage_reduction_initial')
-    self.CVarCloakTimeReuse = GetConVar('ttt_deadringer_cloak_reuse')
+
     self.CVarCorpseMode = GetConVar('ttt_deadringer_corpse_mode')
-    self.CVarCloakTransparency = GetConVar('ttt_deadringer_cloak_transparency')
-    self.CVarCloakTargetid = GetConVar('ttt_deadringer_cloak_targetid')
-    self.CVarDamageThreshold = GetConVar('ttt_deadringer_damage_threshold')
+
+    self.CVarHudPersist = GetConVar('ttt_deadringer_hud_persist')
+    self.CVarHudClassic = GetConVar('ttt_deadringer_hud_classic')
+
+    self.CVarSoundRecharge = GetConVar('ttt_deadringer_sound_recharge')
+    self.CVarSoundRechargeLocal = GetConVar('ttt_deadringer_sound_recharge_local')
+    self.CVarSoundUncloak = GetConVar('ttt_deadringer_sound_uncloak')
+    self.CVarSoundUncloakLocal = GetConVar('ttt_deadringer_sound_uncloak_local')
+    self.CVarSoundActivate = GetConVar('ttt_deadringer_sound_activate')
+    self.CVarSoundActivateLocal = GetConVar('ttt_deadringer_sound_activate_local')
+    self.CVarSoundDeactivate = GetConVar('ttt_deadringer_sound_deactivate')
+    self.CVarSoundDeactivateLocal = GetConVar('ttt_deadringer_sound_deactivate_local')
 
     if CLIENT and engine.ActiveGamemode() == 'terrortown' then
         if TTT2 then
@@ -127,12 +142,13 @@ function SWEP:SetupHooks()
         wep:Think()
     end)
 
-    if CLIENT and not TTT2 then
+    if CLIENT then
         hook.Add('HUDPaint', self, function(wep)
             -- Run weapon HUDPaint when we are not active weapon
             if not IsValid(wep) then return end
             local owner = wep:GetOwner()
             if not IsValid(owner) then return end
+            if owner ~= LocalPlayer() then return end
             if owner:GetActiveWeapon() == wep then return end
 
             wep:DrawHUD()
@@ -155,31 +171,21 @@ function SWEP:RemoveHooks()
 end
 
 function SWEP:PrimaryAttack()
-    local owner = self:GetOwner()
-    if not IsValid(owner) then return end
-
-    local status = owner:GetNWInt('DRStatus')
-    if not owner:GetNWBool('DRCloaked', false) and status ~= CLOAK.READY and status ~= CLOAK.UNCLOAKED then
-        owner:SetNWInt('DRStatus', CLOAK.READY)
-        if not self:IsCharged() then
-            owner:SetNWInt('DRStatus', CLOAK.UNCLOAKED)
-        end
-
-        if (CLIENT and self:IsCarriedByLocalPlayer()) or game.SinglePlayer() then
-            owner:EmitSound('buttons/blip1.wav', 100, 100, 1, CHAN_AUTO)
+    local status = self:GetStatus()
+    if not self:GetCloaked() and status ~= CLOAK.READY and status ~= CLOAK.UNCLOAKED then
+        self:SetStatus(not self:IsCharged() and CLOAK.UNCLOAKED or CLOAK.READY)
+        if self.CVarSoundActivate:GetBool() then
+            self:PlaySound('deadringer_activate', self.CVarSoundActivateLocal:GetBool() and self:GetOwner() or nil)
         end
     end
 end
 
 function SWEP:SecondaryAttack()
-    local owner = self:GetOwner()
-    if not IsValid(owner) then return end
-
-    local status = owner:GetNWInt('DRStatus')
-    if not owner:GetNWBool('DRCloaked', false) and status == CLOAK.READY then
-        owner:SetNWInt('DRStatus', CLOAK.DISABLED)
-        if (CLIENT and self:IsCarriedByLocalPlayer()) or game.SinglePlayer() then
-            owner:EmitSound('buttons/blip1.wav', 100, 73, 1, CHAN_AUTO)
+    local status = self:GetStatus()
+    if not self:GetCloaked() and status == CLOAK.READY then
+        self:SetStatus(CLOAK.DISABLED)
+        if self.CVarSoundDeactivate:GetBool() then
+            self:PlaySound('deadringer_deactivate', self.CVarSoundDeactivateLocal:GetBool() and self:GetOwner() or nil)
         end
     end
 end
@@ -190,8 +196,8 @@ function SWEP:EntityTakeDamage(target, dmginfo)
 
     if not target:HasWeapon('weapon_ttt_deadringer') then return end -- This should never happen, but just in case.
 
-    local cloaked = target:GetNWBool('DRCloaked', false)
-    local status = target:GetNWInt('DRStatus', CLOAK.NONE)
+    local cloaked = self:GetCloaked()
+    local status = self:GetStatus()
     local threshold = self.CVarDamageThreshold:GetInt()
 
     if not cloaked and status == CLOAK.READY then
@@ -205,8 +211,8 @@ function SWEP:EntityTakeDamage(target, dmginfo)
                 return true
             end
         elseif target:IsOnFire() then
-            target:Extinguish()
             self:Cloak(target, dmginfo)
+            target:Extinguish()
         end
     end
 
@@ -226,7 +232,7 @@ end
 function SWEP:PlayerFootstep(ply)
     if ply ~= self:GetOwner() then return end
 
-    if ply:Alive() and ply:GetNWBool('DRCloaked', false) and ply:GetNWInt('DRStatus') == CLOAK.CLOAKED then
+    if ply:Alive() and self:GetCloaked() and self:GetStatus() == CLOAK.CLOAKED then
         return true
     end
 end
@@ -237,17 +243,47 @@ function SWEP:KeyPress(ply, key)
     if ply ~= self:GetOwner() then return end
     if not ply:GetNWBool('DRCloaked', false) then return end
 
-    if ply:GetNWInt('DRStatus', CLOAK.NONE) == CLOAK.CLOAKED and key == IN_ATTACK2 then
+    if self:GetStatus() == CLOAK.CLOAKED and key == IN_ATTACK2 then
         self:Uncloak(ply)
     end
+end
+
+function SWEP:SetStatus(status)
+    local owner = self:GetOwner()
+    if not IsValid(owner) then return end
+    local oldStatus = owner:GetNWInt('DRStatus', CLOAK.NONE)
+    owner:SetNWInt('DRStatus', status)
+
+    hook.Run('DeadRingerStatusChanged', self, owner, oldStatus, status)
+end
+
+function SWEP:GetStatus()
+    local owner = self:GetOwner()
+    if not IsValid(owner) then return end
+
+    return owner:GetNWInt('DRStatus', CLOAK.NONE)
+end
+
+function SWEP:SetCloaked(cloaked)
+    local owner = self:GetOwner()
+    if not IsValid(owner) then return end
+
+    owner:SetNWBool('DRCloaked', cloaked)
+end
+
+function SWEP:GetCloaked()
+    local owner = self:GetOwner()
+    if not IsValid(owner) then return end
+
+    return owner:GetNWBool('DRCloaked', false)
 end
 
 function SWEP:Think()
     local owner = self:GetOwner()
     if not IsValid(owner) then return end
 
-    local cloaked = owner:GetNWBool('DRCloaked', false)
-    local status = owner:GetNWInt('DRStatus', CLOAK.NONE)
+    local cloaked = self:GetCloaked()
+    local status = self:GetStatus()
     local chargeTime = owner:GetNWFloat('DRChargeTime', 1 / 0)
 
     if CLIENT and owner.DRNoTarget == nil then
@@ -257,13 +293,19 @@ function SWEP:Think()
     if not cloaked then
         if status == CLOAK.UNCLOAKED and chargeTime < CurTime() then
             if SERVER then
-                owner:SetNWInt('DRStatus', CLOAK.DISABLED)
+                if self.CVarCloakReactivate:GetBool() then
+                    self:SetStatus(CLOAK.READY)
+                else
+                    self:SetStatus(CLOAK.DISABLED)
+                end
 
-                if TTT2 then
+                if TTT2 and not self.CVarHudClassic:GetBool() then
                     STATUS:AddStatus(owner, 'deadringer_ready')
                 end
-            elseif self:IsCarriedByLocalPlayer() then
-                surface.PlaySound('ttt/recharged.wav')
+            end
+
+            if self.CVarSoundRecharge:GetBool() then
+                self:PlaySound('ttt/recharged.wav', self.CVarSoundRechargeLocal:GetBool() and owner or nil)
             end
         end
 
@@ -273,13 +315,14 @@ function SWEP:Think()
             end
 
             for _, wep in ipairs(owner:GetWeapons()) do
-                if not IsValid(wep) then continue end
-                if wep.DRNoDraw == nil then
-                    wep.DRNoDraw = wep:GetNoDraw()
-                end
+                if IsValid(wep) then
+                    if wep.DRNoDraw == nil then
+                        wep.DRNoDraw = wep:GetNoDraw()
+                    end
 
-                if wep:GetNoDraw() and not wep.DRNoDraw then
-                    wep:SetNoDraw(false)
+                    if wep:GetNoDraw() and not wep.DRNoDraw then
+                        wep:SetNoDraw(false)
+                    end
                 end
             end
         end
@@ -291,13 +334,14 @@ function SWEP:Think()
                 end
 
                 for _, wep in ipairs(owner:GetWeapons()) do
-                    if not IsValid(wep) then continue end
-                    if wep.DRNoDraw == nil then
-                        wep.DRNoDraw = wep:GetNoDraw()
-                    end
+                    if IsValid(wep) then
+                        if wep.DRNoDraw == nil then
+                            wep.DRNoDraw = wep:GetNoDraw()
+                        end
 
-                    if not wep:GetNoDraw() then
-                        wep:SetNoDraw(true)
+                        if not wep:GetNoDraw() then
+                            wep:SetNoDraw(true)
+                        end
                     end
                 end
             end
@@ -307,6 +351,30 @@ function SWEP:Think()
              end
         end
     end
+
+    if SERVER and TTT2 and self.CVarHudClassic:GetBool() then
+        STATUS:RemoveStatus(owner, 'deadringer_ready')
+        STATUS:RemoveStatus(owner, 'deadringer_cloaked')
+        STATUS:RemoveStatus(owner, 'deadringer_cooldown')
+    end
+end
+
+function SWEP:PlaySound(sound, filter)
+    if CLIENT then return end
+
+    if not IsFirstTimePredicted() then return end
+
+    if filter ~= nil then
+        net.Start('DR.Sound')
+            net.WriteEntity(self)
+            net.WriteString(sound)
+        net.Send(filter)
+    else
+        net.Start('DR.Sound')
+            net.WriteEntity(self)
+            net.WriteString(sound)
+        net.Broadcast()
+    end
 end
 
 function SWEP:Deploy()
@@ -315,12 +383,12 @@ function SWEP:Deploy()
         if not IsValid(owner) then return end
 
         if SERVER then
-            owner:SetNWInt('DRStatus', CLOAK.NONE)
-            owner:SetNWBool('DRCloaked', false)
+            self:SetStatus(CLOAK.NONE)
+            self:SetCloaked(false)
             owner:SetNWInt('DRRole', -1)
             owner:SetNWFloat('DRChargeTime', 0)
 
-            if TTT2 then
+            if TTT2 and not self.CVarHudClassic:GetBool() then
                 STATUS:AddStatus(owner, 'deadringer_ready')
             end
         end
@@ -357,12 +425,12 @@ function SWEP:OnRemove()
     if not IsValid(owner) then return end
 
     if SERVER then
-        if owner:GetNWBool('DRCloaked', false) then
+        if self:GetCloaked() then
             self:Uncloak(owner)
         end
 
-        owner:SetNWInt('DRStatus', CLOAK.NONE)
-        owner:SetNWBool('DRCloaked', false)
+        self:SetStatus(CLOAK.NONE)
+        self:SetCloaked(false)
         owner:SetNWInt('DRRole', -1)
         owner:SetNWFloat('DRChargeTime', 0)
 
@@ -384,8 +452,8 @@ function SWEP:Cloak(ply, dmginfo)
         net.WriteBool(true)
     net.Send(ply)
 
-    ply:SetNWBool('DRCloaked', true)
-    ply:SetNWInt('DRStatus', CLOAK.CLOAKED)
+    self:SetCloaked(true)
+    self:SetStatus(CLOAK.CLOAKED)
     ply:SetNWFloat('DRChargeTime', CurTime() + self.CVarCloakTime:GetInt())
     ply:SetNWFloat('DRDamageReductionTime', CurTime() + self.CVarDamageReductionTime:GetFloat())
 
@@ -416,14 +484,14 @@ function SWEP:Cloak(ply, dmginfo)
 end
 
 function SWEP:IsCharged()
-    local owner = self:GetOwner()
-    if not IsValid(owner) then return false end
-
-    if owner:GetNWBool('DRCloaked', false) then
+    if self:GetCloaked() then
         return false
     end
 
-    return owner:GetNWInt('DRStatus', CLOAK.NONE) == CLOAK.READY
+    local owner = self:GetOwner()
+    if not IsValid(owner) then return end
+
+    return owner:GetNWFloat('DRChargeTime', 0) < CurTime()
 end
 
 function SWEP:Uncloak(ply)
@@ -433,12 +501,12 @@ function SWEP:Uncloak(ply)
     if result == false then return end
 
     net.Start('DR.Cloak')
-    net.WriteBool(false)
+        net.WriteBool(false)
     net.Send(ply)
 
-    ply:SetNWBool('DRCloaked', false)
+    self:SetCloaked(false)
+    self:SetStatus(CLOAK.UNCLOAKED)
     ply:SetNWInt('DRRole', -1)
-    ply:SetNWInt('DRStatus', CLOAK.UNCLOAKED)
 
     local timeRemaining = 0
     if self.CVarCloakTimeReuse:GetBool() then
@@ -451,7 +519,9 @@ function SWEP:Uncloak(ply)
 
     if TTT2 then
         STATUS:RemoveStatus(ply, 'deadringer_ready')
-        STATUS:AddTimedStatus(ply, 'deadringer_cooldown', chargeTime, true)
+        if not self.CVarHudClassic:GetBool() then
+            STATUS:AddTimedStatus(ply, 'deadringer_cooldown', chargeTime, true)
+        end
     end
 
     ply:SetBloodColor(BLOOD_COLOR_RED)
@@ -463,7 +533,9 @@ function SWEP:Uncloak(ply)
     ply:SetRenderMode(ply.DRRenderMode or RENDERMODE_NORMAL)
     ply:SetMaterial(ply.DRMaterial or '')
 
-    self:EmitSound(self.UncloakSound, 100, 100, 1, CHAN_WEAPON)
+    if self.CVarSoundUncloak:GetBool() then
+        self:PlaySound(self.UncloakSound, self.CVarSoundUncloakLocal:GetBool() and ply or nil)
+    end
 
     -- Reset the body_found status of the player so they appear alive again.
     if engine.ActiveGamemode() == 'terrortown' then
@@ -512,7 +584,9 @@ function SWEP:SpawnRagdoll(ply, dmginfo)
             ragdoll.was_team = roleData.defaultTeam
             ragdoll.role_color = roleData.color
             STATUS:RemoveStatus(ply, 'deadringer_ready')
-            STATUS:AddTimedStatus(ply, 'deadringer_cloaked', self.CVarCloakTime:GetInt(), true)
+            if not self.CVarHudClassic:GetBool() then
+                STATUS:AddTimedStatus(ply, 'deadringer_cloaked', self.CVarCloakTime:GetInt(), true)
+            end
         end
     else
         ragdoll = ents.Create('prop_ragdoll')
@@ -576,10 +650,13 @@ function SWEP:ChooseRole(ply)
 end
 
 function SWEP:DrawHUD()
-    if TTT2 then
+    if TTT2 and not self.CVarHudClassic:GetBool() then
         BaseClass.DrawHUD(self)
         return
     end
+
+    local status = self:GetStatus()
+    if not self.CVarHudPersist:GetBool() and status ~= CLOAK.READY and status ~= CLOAK.UNCLOAKED and status ~= CLOAK.CLOAKED then return end
 
     local background = surface.GetTextureID('vgui/ttt/misc_ammo_area_red')
     local w, h = surface.GetTextureSize(background)
@@ -588,7 +665,7 @@ function SWEP:DrawHUD()
     surface.DrawTexturedRect(13, ScrH() - h - 240, w * 5, h * 5)
 
     local owner = self:GetOwner()
-    local cloaked = owner:GetNWBool('DRCloaked', false)
+    local cloaked = self:GetCloaked()
     local chargeTime = owner:GetNWFloat('DRChargeTime', 0)
     local divisor = cloaked and self.CVarCloakTime:GetInt() or self.CVarChargeTime:GetInt()
     local charge = (chargeTime - CurTime()) / divisor
@@ -604,6 +681,7 @@ end
 
 if SERVER then
     util.AddNetworkString('DR.Cloak')
+    util.AddNetworkString('DR.Sound')
 else
     net.Receive('DR.Cloak', function()
         local cloak = net.ReadBool()
@@ -615,6 +693,14 @@ else
         else
             ply:GetViewModel():SetMaterial('models/weapons/v_crowbar.mdl')
         end
+    end)
+
+    net.Receive('DR.Sound', function()
+        local wep = net.ReadEntity()
+        local sound = net.ReadString()
+        if not IsValid(wep) then return end
+
+        wep:EmitSound(sound, 100, 100, 1, CHAN_WEAPON)
     end)
 end
 
@@ -731,6 +817,114 @@ if CLIENT and TTT2 then
         form:MakeCheckBox({
             label = 'label_deadringer_corpse_confirm',
             serverConvar = 'ttt_deadringer_corpse_confirm'
+        })
+
+        form:MakeHelp({
+            label = 'help_deadringer_hud_persist'
+        })
+
+        form:MakeCheckBox({
+            label = 'label_deadringer_hud_persist',
+            serverConvar = 'ttt_deadringer_hud_persist'
+        })
+
+        form:MakeHelp({
+            label = 'help_deadringer_hud_classic'
+        })
+
+        form:MakeCheckBox({
+            label = 'label_deadringer_hud_classic',
+            serverConvar = 'ttt_deadringer_hud_classic'
+        })
+
+        form:MakeHelp({
+            label = 'help_deadringer_sound_cloak'
+        })
+
+        form:MakeCheckBox({
+            label = 'label_deadringer_sound_cloak',
+            serverConvar = 'ttt_deadringer_sound_cloak'
+        })
+
+        form:MakeHelp({
+            label = 'help_deadringer_sound_cloak_local'
+        })
+
+        form:MakeCheckBox({
+            label = 'label_deadringer_sound_cloak_local',
+            serverConvar = 'ttt_deadringer_sound_cloak_local'
+        })
+
+        form:MakeHelp({
+            label = 'help_deadringer_sound_uncloak'
+        })
+
+        form:MakeCheckBox({
+            label = 'label_deadringer_sound_uncloak',
+            serverConvar = 'ttt_deadringer_sound_uncloak'
+        })
+
+        form:MakeHelp({
+            label = 'help_deadringer_sound_uncloak_local'
+        })
+
+        form:MakeCheckBox({
+            label = 'label_deadringer_sound_uncloak_local',
+            serverConvar = 'ttt_deadringer_sound_uncloak_local'
+        })
+
+        form:MakeHelp({
+            label = 'help_deadringer_sound_recharge'
+        })
+
+        form:MakeCheckBox({
+            label = 'label_deadringer_sound_recharge',
+            serverConvar = 'ttt_deadringer_sound_recharge'
+        })
+
+        form:MakeHelp({
+            label = 'help_deadringer_sound_recharge_local'
+        })
+
+        form:MakeCheckBox({
+            label = 'label_deadringer_sound_recharge_local',
+            serverConvar = 'ttt_deadringer_sound_recharge_local'
+        })
+
+        form:MakeHelp({
+            label = 'help_deadringer_sound_activate'
+        })
+
+        form:MakeCheckBox({
+            label = 'label_deadringer_sound_activate',
+            serverConvar = 'ttt_deadringer_sound_activate'
+        })
+
+        form:MakeHelp({
+            label = 'help_deadringer_sound_activate_local'
+        })
+
+        form:MakeCheckBox({
+            label = 'label_deadringer_sound_activate_local',
+            serverConvar = 'ttt_deadringer_sound_activate_local'
+        })
+
+        form:MakeHelp({
+            label = 'help_deadringer_sound_deactivate'
+        })
+
+        form:MakeCheckBox({
+            label = 'label_deadringer_sound_deactivate',
+            serverConvar = 'ttt_deadringer_sound_deactivate'
+        })
+
+        form:MakeHelp({
+            label = 'help_deadringer_sound_deactivate_local'
+        })
+
+        form:MakeCheckBox({
+            label = 'label_deadringer_sound_deactivate_local',
+            serverConvar = 'ttt_deadringer_sound_deactivate_local'
         })
     end
 end

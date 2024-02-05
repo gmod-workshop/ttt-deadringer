@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0]
+
+### Fixed
+- Fixed sound networking so that sounds should now play appropriately on only the owner or all clients
+- Fixed the classic HUD not drawing on TTT2 when the `ttt_deadringer_hud_classic` setting is active
+
+### Added
+- Added many new settings for adjusting what sounds are played and who hears them
+    - Settings
+        - `ttt_deadringer_sound_recharge`
+        - `ttt_deadringer_sound_uncloak`
+        - `ttt_deadringer_sound_activate`
+        - `ttt_deadringer_sound_deactivate`
+    - You can also suffix these settings with `_local` to change if they are only played to the owner or everyone
+        - Ex: `ttt_deadringer_sound_uncloak_local 0` will make it so only the owner hears the uncloak sound
+- Added `ttt_deadringer_hud_classic`
+    - Want to use the classic Dead Ringer HUD even in TTT2? Now you can!
+- Added `ttt_deadringer_hud_persist`
+    - If you are using the classic HUD, this will make the HUD persist on even if the Dead Ringer isn't active
+- Added `ttt_deadringer_cloak_reactivate`
+    - When this setting is enabled the Dead Ringer will automatically reactivate when charged
+
+
+### Changed
+- Changed the classic HUD to only draw when the Dead Ringer is activated, cloaked, or on cooldown.
+    - You can change this with the new `ttt_deadringer_hud_persist` setting
+
 ## [3.0.1]
 
 ### Fixed
@@ -92,7 +119,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed addon settings not being set correctly for TTT2 (#1)
 
-[Unreleased]: https://github.com/gmod-workshop/ttt-deadringer/compare/3.0.1...HEAD
+[Unreleased]: https://github.com/gmod-workshop/ttt-deadringer/compare/3.1.0...HEAD
+[3.1.0]: https://github.com/gmod-workshop/ttt-deadringer/compare/3.0.1...3.1.0
 [3.0.1]: https://github.com/gmod-workshop/ttt-deadringer/compare/3.0.0...3.0.1
 [3.0.0]: https://github.com/gmod-workshop/ttt-deadringer/compare/2.2.0...3.0.0
 [2.2.0]: https://github.com/gmod-workshop/ttt-deadringer/compare/2.1.1...2.2.0

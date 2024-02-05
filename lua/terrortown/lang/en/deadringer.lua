@@ -38,3 +38,39 @@ L.help_deadringer_corpse_mode = 'Whether or not the Dead Ringer will show the re
 
 L.label_deadringer_corpse_confirm = 'Corpse Confirm'
 L.help_deadringer_corpse_confirm = 'Whether or not the Dead Ringer will confirm the death of the player on the corpse.'
+
+L.label_deadringer_hud_persist = 'HUD Persist'
+L.help_deadringer_hud_persist = 'Whether or not the Dead Ringer HUD will persist even while it is not activated.'
+
+L.label_deadringer_hud_classic = 'Classic HUD'
+L.help_deadringer_hud_classic = 'Whether or not the Dead Ringer HUD will use the classic style.'
+
+L.label_deadringer_sound_cloak = 'Cloak Sound'
+L.help_deadringer_sound_cloak = 'Whether or not the Dead Ringer will play a sound when cloaking.'
+
+L.label_deadringer_sound_cloak_local = 'Cloak Sound Local'
+L.help_deadringer_sound_cloak_local = 'Whether or not the cloaking sound is played locally only.'
+
+L.label_deadringer_sound_uncloak = 'Uncloak Sound'
+L.help_deadringer_sound_uncloak = 'Whether or not the Dead Ringer will play a sound when uncloaking.'
+
+L.label_deadringer_sound_uncloak_local = 'Uncloak Sound Local'
+L.help_deadringer_sound_uncloak_local = 'Whether or not the uncloaking sound is played locally only.'
+
+L.label_deadringer_sound_recharge = 'Recharge Sound'
+L.help_deadringer_sound_recharge = 'Whether or not the Dead Ringer will play a sound when recharged.'
+
+L.label_deadringer_sound_recharge_local = 'Recharge Sound Local'
+L.help_deadringer_sound_recharge_local = 'Whether or not the recharging sound is played locally only.'
+
+L.label_deadringer_sound_activate = 'Activate Sound'
+L.help_deadringer_sound_activate = 'Whether or not the Dead Ringer will play a sound when activated.'
+
+L.label_deadringer_sound_activate_local = 'Activate Sound Local'
+L.help_deadringer_sound_activate_local = 'Whether or not the activating sound is played locally only.'
+
+L.label_deadringer_sound_deactivate = 'Deactivate Sound'
+L.help_deadringer_sound_deactivate = 'Whether or not the Dead Ringer will play a sound when deactivated.'
+
+L.label_deadringer_sound_deactivate_local = 'Deactivate Sound Local'
+L.help_deadringer_sound_deactivate_local = 'Whether or not the deactivating sound is played locally only.'
