@@ -121,8 +121,8 @@ function SWEP:SetupHooks()
         if not IsValid(wep) then return end
         local owner = wep:GetOwner()
         if not IsValid(owner) then return end
-        if SERVER or game.IsDedicated() and owner:GetActiveWeapon() == wep then return end
-        if CLIENT and owner == LocalPlayer() then return end
+        if (SERVER or game.IsDedicated()) and owner:GetActiveWeapon() == wep then return end
+        if CLIENT and owner == LocalPlayer() and not game.IsDedicated() then return end
 
         wep:Think()
     end)
@@ -377,8 +377,11 @@ end
 function SWEP:Cloak(ply, dmginfo)
     if CLIENT then return end
 
+    local result = hook.Run('DeadRingerPreCloak', self, ply, dmginfo)
+    if result == false then return end
+
     net.Start('DR.Cloak')
-    net.WriteBool(true)
+        net.WriteBool(true)
     net.Send(ply)
 
     ply:SetNWBool('DRCloaked', true)
@@ -408,6 +411,8 @@ function SWEP:Cloak(ply, dmginfo)
 
     local ragdoll = self:SpawnRagdoll(ply, dmginfo)
     ply:SetNWInt('DRRole', ragdoll.was_role or -1)
+
+    hook.Run('DeadRingerCloak', self, ply, dmginfo, ragdoll)
 end
 
 function SWEP:IsCharged()
@@ -423,6 +428,9 @@ end
 
 function SWEP:Uncloak(ply)
     if CLIENT then return end
+
+    local result = hook.Run('DeadRingerPreUncloak', self, ply)
+    if result == false then return end
 
     net.Start('DR.Cloak')
     net.WriteBool(false)
@@ -478,6 +486,8 @@ function SWEP:Uncloak(ply)
             ent:Remove()
         end
     end
+
+    hook.Run('DeadRingerUncloak', self, ply)
 end
 
 function SWEP:SpawnRagdoll(ply, dmginfo)
