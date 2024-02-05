@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0]
+
 ### Fixed
 - Fixed even more issues with a player's weapons still being visible to other players
     - This had to do with the weapon's `SWEP:Think` not being called properly at all times
@@ -85,7 +87,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed addon settings not being set correctly for TTT2 (#1)
 
-[Unreleased]: https://github.com/gmod-workshop/ttt-deadringer/compare/2.2.0...HEAD
+[Unreleased]: https://github.com/gmod-workshop/ttt-deadringer/compare/3.0.0...HEAD
+[3.0.0]: https://github.com/gmod-workshop/ttt-deadringer/compare/2.2.0...3.0.0
 [2.2.0]: https://github.com/gmod-workshop/ttt-deadringer/compare/2.1.1...2.2.0
 [2.1.1]: https://github.com/gmod-workshop/ttt-deadringer/compare/2.0.0...2.1.1
 [2.0.0]: https://github.com/gmod-workshop/ttt-deadringer/compare/1.1.0...2.0.0
