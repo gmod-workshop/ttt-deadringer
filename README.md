@@ -12,12 +12,15 @@ Includes an individual shop icon.
 
 ## ConVars
 
-- ttt_deadringer_chargetime (def: 20) - Time it takes to recharge the Dead Ringer.
-- ttt_deadringer_cloaktime (def: 7) - Time that the Dead Ringer will cloak you for.
+- ttt_deadringer_cloak_cooldown (def: 20) - Time it takes to recharge the Dead Ringer.
+- ttt_deadringer_cloak_duration (def: 7) - Time that the Dead Ringer will cloak you for.
+- ttt_deadringer_cloak_reuse (def: 0) - Whether or not the Dead Ringer will convert unused cloak time into charge time.
+- ttt_deadringer_cloak_transparency (def: 0.0) - Transparency of the Dead Ringer cloak. (0.0 = invisible, 1.0 = visible)
+- ttt_deadringer_cloak_targetid (def: 0) - Whether or not the Dead Ringer will show the target ID while cloaked.
+- ttt_deadringer_damage_threshold (def: 2) - Threshold to trigger the Dead Ringer. The threshold is a flat value, not a percentage.
 - ttt_deadringer_damage_reduction (def: 0.65) - Damage reduction while cloaked.
 - ttt_deadringer_damage_reduction_time (def: 3) - Damage reduction time while cloaked.
 - ttt_deadringer_damage_reduction_initial (def: 0.75) - Percentage of damage reduction for the initial hit which triggers the Dead Ringer. (0.75 = 75%)
-- ttt_deadringer_cloaktime_reuse (def: 0) - Whether or not the Dead Ringer will convert unused cloak time into charge time.
 - ttt_deadringer_corpse_mode (def: 0) - Whether or not the Dead Ringer will show a fake role, real role, or spoofed innocent role.
 - ttt_deadringer_corpse_confirm (def: 0) - Whether or not the Dead Ringer will confirm the death of the player on the corpse.
 
