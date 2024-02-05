@@ -1,5 +1,7 @@
 AddCSLuaFile()
 
+DEFINE_BASECLASS(engine.ActiveGamemode() == 'terrortown' and 'weapon_tttbase' or 'weapon_base')
+
 if engine.ActiveGamemode() ~= 'terrortown' then
     SWEP.PrintName = 'Dead Ringer'
 
@@ -84,13 +86,26 @@ function SWEP:Initialize()
 
     self.FirstDeploy = true
 
-    self.CVarChargeTime = GetConVar('ttt_deadringer_chargetime')
-    self.CVarCloakTime = GetConVar('ttt_deadringer_cloaktime')
+    self.CVarChargeTime = GetConVar('ttt_deadringer_cloak_cooldown')
+    self.CVarCloakTime = GetConVar('ttt_deadringer_cloak_duration')
     self.CVarDamageReduction = GetConVar('ttt_deadringer_damage_reduction')
     self.CVarDamageReductionTime = GetConVar('ttt_deadringer_damage_reduction_time')
     self.CVarDamageReductionInitial = GetConVar('ttt_deadringer_damage_reduction_initial')
-    self.CVarCloakTimeReuse = GetConVar('ttt_deadringer_cloaktime_reuse')
+    self.CVarCloakTimeReuse = GetConVar('ttt_deadringer_cloak_reuse')
     self.CVarCorpseMode = GetConVar('ttt_deadringer_corpse_mode')
+    self.CVarCloakTransparency = GetConVar('ttt_deadringer_cloak_transparency')
+    self.CVarCloakTargetid = GetConVar('ttt_deadringer_cloak_targetid')
+    self.CVarDamageThreshold = GetConVar('ttt_deadringer_damage_threshold')
+
+    if CLIENT and engine.ActiveGamemode() == 'terrortown' then
+        if TTT2 then
+            self:AddTTT2HUDHelp('deadringer_primary', 'deadringer_secondary')
+        else
+            self:AddHUDHelp('deadringer_primary', 'deadringer_secondary', true)
+        end
+    end
+
+    BaseClass.Initialize(self)
 end
 
 function SWEP:SetupHooks()
@@ -106,7 +121,8 @@ function SWEP:SetupHooks()
         if not IsValid(wep) then return end
         local owner = wep:GetOwner()
         if not IsValid(owner) then return end
-        if owner:GetActiveWeapon() == wep then return end
+        if SERVER or game.IsDedicated() and owner:GetActiveWeapon() == wep then return end
+        if CLIENT and owner == LocalPlayer() then return end
 
         wep:Think()
     end)
@@ -142,11 +158,11 @@ function SWEP:PrimaryAttack()
     local owner = self:GetOwner()
     if not IsValid(owner) then return end
 
-    local status = owner:GetNW2Int('DRStatus')
-    if not owner:GetNW2Bool('DRCloaked', false) and status ~= CLOAK.READY and status ~= CLOAK.UNCLOAKED then
-        owner:SetNW2Int('DRStatus', CLOAK.READY)
+    local status = owner:GetNWInt('DRStatus')
+    if not owner:GetNWBool('DRCloaked', false) and status ~= CLOAK.READY and status ~= CLOAK.UNCLOAKED then
+        owner:SetNWInt('DRStatus', CLOAK.READY)
         if not self:IsCharged() then
-            owner:SetNW2Int('DRStatus', CLOAK.UNCLOAKED)
+            owner:SetNWInt('DRStatus', CLOAK.UNCLOAKED)
         end
 
         if (CLIENT and self:IsCarriedByLocalPlayer()) or game.SinglePlayer() then
@@ -159,9 +175,9 @@ function SWEP:SecondaryAttack()
     local owner = self:GetOwner()
     if not IsValid(owner) then return end
 
-    local status = owner:GetNW2Int('DRStatus')
-    if not owner:GetNW2Bool('DRCloaked', false) and status == CLOAK.READY then
-        owner:SetNW2Int('DRStatus', CLOAK.DISABLED)
+    local status = owner:GetNWInt('DRStatus')
+    if not owner:GetNWBool('DRCloaked', false) and status == CLOAK.READY then
+        owner:SetNWInt('DRStatus', CLOAK.DISABLED)
         if (CLIENT and self:IsCarriedByLocalPlayer()) or game.SinglePlayer() then
             owner:EmitSound('buttons/blip1.wav', 100, 73, 1, CHAN_AUTO)
         end
@@ -174,11 +190,12 @@ function SWEP:EntityTakeDamage(target, dmginfo)
 
     if not target:HasWeapon('weapon_ttt_deadringer') then return end -- This should never happen, but just in case.
 
-    local cloaked = target:GetNW2Bool('DRCloaked', false)
-    local status = target:GetNW2Int('DRStatus', CLOAK.NONE)
+    local cloaked = target:GetNWBool('DRCloaked', false)
+    local status = target:GetNWInt('DRStatus', CLOAK.NONE)
+    local threshold = self.CVarDamageThreshold:GetInt()
 
     if not cloaked and status == CLOAK.READY then
-        if dmginfo:GetDamage() >= 2 and dmginfo:GetDamage() < target:Health() then
+        if dmginfo:GetDamage() >= threshold and dmginfo:GetDamage() < target:Health() then
             self:Cloak(target, dmginfo)
 
             local damageReductionInitial = self.CVarDamageReductionInitial:GetFloat()
@@ -194,7 +211,7 @@ function SWEP:EntityTakeDamage(target, dmginfo)
     end
 
     if cloaked then
-        local damageReductionTime = target:GetNW2Float('DRDamageReductionTime', 0)
+        local damageReductionTime = target:GetNWFloat('DRDamageReductionTime', 0)
         if damageReductionTime > CurTime() then
             local damageReduction = self.CVarDamageReduction:GetFloat()
             if damageReduction > 0 then
@@ -209,7 +226,7 @@ end
 function SWEP:PlayerFootstep(ply)
     if ply ~= self:GetOwner() then return end
 
-    if ply:Alive() and ply:GetNW2Bool('DRCloaked', false) and ply:GetNW2Int('DRStatus') == CLOAK.CLOAKED then
+    if ply:Alive() and ply:GetNWBool('DRCloaked', false) and ply:GetNWInt('DRStatus') == CLOAK.CLOAKED then
         return true
     end
 end
@@ -218,9 +235,9 @@ function SWEP:KeyPress(ply, key)
     if CLIENT then return end
     if not IsValid(ply) then return end
     if ply ~= self:GetOwner() then return end
-    if not ply:GetNW2Bool('DRCloaked', false) then return end
+    if not ply:GetNWBool('DRCloaked', false) then return end
 
-    if ply:GetNW2Int('DRStatus', CLOAK.NONE) == CLOAK.CLOAKED and key == IN_ATTACK2 then
+    if ply:GetNWInt('DRStatus', CLOAK.NONE) == CLOAK.CLOAKED and key == IN_ATTACK2 then
         self:Uncloak(ply)
     end
 end
@@ -229,14 +246,18 @@ function SWEP:Think()
     local owner = self:GetOwner()
     if not IsValid(owner) then return end
 
-    local cloaked = owner:GetNW2Bool('DRCloaked', false)
-    local status = owner:GetNW2Int('DRStatus', CLOAK.NONE)
-    local chargeTime = owner:GetNW2Float('DRChargeTime', 1 / 0)
+    local cloaked = owner:GetNWBool('DRCloaked', false)
+    local status = owner:GetNWInt('DRStatus', CLOAK.NONE)
+    local chargeTime = owner:GetNWFloat('DRChargeTime', 1 / 0)
+
+    if CLIENT and owner.DRNoTarget == nil then
+        owner.DRNoTarget = Either(owner.NoTarget == nil, -1, owner.NoTarget and 1 or 0)
+    end
 
     if not cloaked then
         if status == CLOAK.UNCLOAKED and chargeTime < CurTime() then
             if SERVER then
-                owner:SetNW2Int('DRStatus', CLOAK.DISABLED)
+                owner:SetNWInt('DRStatus', CLOAK.DISABLED)
 
                 if TTT2 then
                     STATUS:AddStatus(owner, 'deadringer_ready')
@@ -247,6 +268,10 @@ function SWEP:Think()
         end
 
         if CLIENT then
+            if owner.NoTarget and owner.DRNoTarget < 1 then
+                owner.NoTarget = Either(owner.DRNoTarget == -1, nil, false)
+            end
+
             for _, wep in ipairs(owner:GetWeapons()) do
                 if not IsValid(wep) then continue end
                 if wep.DRNoDraw == nil then
@@ -261,6 +286,10 @@ function SWEP:Think()
     else
         if status == CLOAK.CLOAKED then
             if CLIENT then
+                if not self.CVarCloakTargetid:GetBool() and owner.NoTarget ~= true then
+                    owner.NoTarget = true
+                end
+
                 for _, wep in ipairs(owner:GetWeapons()) do
                     if not IsValid(wep) then continue end
                     if wep.DRNoDraw == nil then
@@ -286,9 +315,10 @@ function SWEP:Deploy()
         if not IsValid(owner) then return end
 
         if SERVER then
-            owner:SetNW2Int('DRStatus', CLOAK.NONE)
-            owner:SetNW2Bool('DRCloaked', false)
-            owner:SetNW2Float('DRChargeTime', 0)
+            owner:SetNWInt('DRStatus', CLOAK.NONE)
+            owner:SetNWBool('DRCloaked', false)
+            owner:SetNWInt('DRRole', -1)
+            owner:SetNWFloat('DRChargeTime', 0)
 
             if TTT2 then
                 STATUS:AddStatus(owner, 'deadringer_ready')
@@ -327,13 +357,14 @@ function SWEP:OnRemove()
     if not IsValid(owner) then return end
 
     if SERVER then
-        if owner:GetNW2Bool('DRCloaked', false) then
+        if owner:GetNWBool('DRCloaked', false) then
             self:Uncloak(owner)
         end
 
-        owner:SetNW2Int('DRStatus', CLOAK.NONE)
-        owner:SetNW2Bool('DRCloaked', false)
-        owner:SetNW2Float('DRChargeTime', 0)
+        owner:SetNWInt('DRStatus', CLOAK.NONE)
+        owner:SetNWBool('DRCloaked', false)
+        owner:SetNWInt('DRRole', -1)
+        owner:SetNWFloat('DRChargeTime', 0)
 
         if TTT2 then
             STATUS:RemoveStatus(owner, 'deadringer_ready')
@@ -350,34 +381,44 @@ function SWEP:Cloak(ply, dmginfo)
     net.WriteBool(true)
     net.Send(ply)
 
-    ply:SetNW2Bool('DRCloaked', true)
-    ply:SetNW2Int('DRStatus', CLOAK.CLOAKED)
-    ply:SetNW2Float('DRChargeTime', CurTime() + self.CVarCloakTime:GetInt())
-    ply:SetNW2Float('DRDamageReductionTime', CurTime() + self.CVarDamageReductionTime:GetFloat())
+    ply:SetNWBool('DRCloaked', true)
+    ply:SetNWInt('DRStatus', CLOAK.CLOAKED)
+    ply:SetNWFloat('DRChargeTime', CurTime() + self.CVarCloakTime:GetInt())
+    ply:SetNWFloat('DRDamageReductionTime', CurTime() + self.CVarDamageReductionTime:GetFloat())
 
     ply:SetBloodColor(DONT_BLEED)
     ply:DrawShadow(false)
     ply:Flashlight(false)
     ply:AllowFlashlight(false)
-    ply:SetNoDraw(true)
+    ply:DrawWorldModel(false)
+
+    local transparency = self.CVarCloakTransparency:GetFloat()
+
+    ply.DRColor = ply:GetColor()
+    ply:SetColor(Color(255, 255, 255, 255 * transparency))
+    ply.DRRenderMode = ply:GetRenderMode()
+    ply:SetRenderMode(RENDERMODE_TRANSCOLOR)
+    ply.DRMaterial = ply:GetMaterial()
+    ply:SetMaterial('sprites/heatwave')
 
     local weapon = ply:GetActiveWeapon()
     if weapons.IsBasedOn(weapon:GetClass(), 'weapon_tttbase') then
         weapon:SetIronsights(false)
     end
 
-    self:SpawnRagdoll(ply, dmginfo)
+    local ragdoll = self:SpawnRagdoll(ply, dmginfo)
+    ply:SetNWInt('DRRole', ragdoll.was_role or -1)
 end
 
 function SWEP:IsCharged()
     local owner = self:GetOwner()
     if not IsValid(owner) then return false end
 
-    if owner:GetNW2Bool('DRCloaked', false) then
+    if owner:GetNWBool('DRCloaked', false) then
         return false
     end
 
-    return owner:GetNW2Int('DRStatus', CLOAK.NONE) == CLOAK.READY
+    return owner:GetNWInt('DRStatus', CLOAK.NONE) == CLOAK.READY
 end
 
 function SWEP:Uncloak(ply)
@@ -387,17 +428,18 @@ function SWEP:Uncloak(ply)
     net.WriteBool(false)
     net.Send(ply)
 
-    ply:SetNW2Bool('DRCloaked', false)
-    ply:SetNW2Int('DRStatus', CLOAK.UNCLOAKED)
+    ply:SetNWBool('DRCloaked', false)
+    ply:SetNWInt('DRRole', -1)
+    ply:SetNWInt('DRStatus', CLOAK.UNCLOAKED)
 
     local timeRemaining = 0
     if self.CVarCloakTimeReuse:GetBool() then
-        timeRemaining = ply:GetNW2Float('DRChargeTime', 0) - CurTime()
+        timeRemaining = ply:GetNWFloat('DRChargeTime', 0) - CurTime()
         timeRemaining = math.Clamp(timeRemaining, 0, self.CVarChargeTime:GetInt())
     end
 
     local chargeTime = math.max(self.CVarChargeTime:GetInt() - timeRemaining, 0)
-    ply:SetNW2Float('DRChargeTime', CurTime() + chargeTime)
+    ply:SetNWFloat('DRChargeTime', CurTime() + chargeTime)
 
     if TTT2 then
         STATUS:RemoveStatus(ply, 'deadringer_ready')
@@ -407,10 +449,13 @@ function SWEP:Uncloak(ply)
     ply:SetBloodColor(BLOOD_COLOR_RED)
     ply:DrawShadow(true)
     ply:AllowFlashlight(true)
-    ply:SetNoDraw(false)
     ply:DrawWorldModel(true)
 
-    ply:EmitSound(self.UncloakSound, 100, 100, 1, CHAN_AUTO)
+    ply:SetColor(ply.DRColor)
+    ply:SetRenderMode(ply.DRRenderMode or RENDERMODE_NORMAL)
+    ply:SetMaterial(ply.DRMaterial or '')
+
+    self:EmitSound(self.UncloakSound, 100, 100, 1, CHAN_WEAPON)
 
     -- Reset the body_found status of the player so they appear alive again.
     if engine.ActiveGamemode() == 'terrortown' then
@@ -475,6 +520,8 @@ function SWEP:SpawnRagdoll(ply, dmginfo)
     end
 
     ragdoll.deadringer_ragdoll = true
+
+    return ragdoll
 end
 
 function SWEP:ChooseRole(ply)
@@ -519,7 +566,10 @@ function SWEP:ChooseRole(ply)
 end
 
 function SWEP:DrawHUD()
-    if TTT2 then return end -- TTT2 handles this itself through STATUS:AddStatus
+    if TTT2 then
+        BaseClass.DrawHUD(self)
+        return
+    end
 
     local background = surface.GetTextureID('vgui/ttt/misc_ammo_area_red')
     local w, h = surface.GetTextureSize(background)
@@ -528,8 +578,8 @@ function SWEP:DrawHUD()
     surface.DrawTexturedRect(13, ScrH() - h - 240, w * 5, h * 5)
 
     local owner = self:GetOwner()
-    local cloaked = owner:GetNW2Bool('DRCloaked', false)
-    local chargeTime = owner:GetNW2Float('DRChargeTime', 0)
+    local cloaked = owner:GetNWBool('DRCloaked', false)
+    local chargeTime = owner:GetNWFloat('DRChargeTime', 0)
     local divisor = cloaked and self.CVarCloakTime:GetInt() or self.CVarChargeTime:GetInt()
     local charge = (chargeTime - CurTime()) / divisor
     charge = math.Clamp(cloaked and charge or 1 - charge, 0, 1)
@@ -558,74 +608,61 @@ else
     end)
 end
 
-if SERVER and TTT2 then
-    hook.Add('TTT2ConfirmPlayer', 'DR.TTT2ConfirmPlayer', function(victim, ply, ragdoll)
-        if not IsValid(ply) or not IsValid(ragdoll) then return end
-        if not ragdoll.deadringer_ragdoll then return end
-
-        if ragdoll.was_role == roles.GetByName('fake').index then
-            return false
-        end
-    end)
-
-    hook.Add('TTTBodyFound', 'DR.TTTBodyFound', function(ply, victim, ragdoll)
-        -- We have to manually confirm the body if the ragdoll is a Dead Ringer ragdoll
-        -- because TTT2 checks if the victim is alive and cloaked player is still alive
-
-        if not IsValid(ply) or not IsValid(victim) or not IsValid(ragdoll) then return end
-        if not ragdoll.deadringer_ragdoll then return end
-
-        local corpseConfirm = GetConVar('ttt_deadringer_corpse_confirm'):GetBool()
-        if not corpseConfirm then return end
-
-        victim:ConfirmPlayer(true)
-
-        -- We have to create a fake player which has GetSubRole, GetTeam, and EntIndex functions
-        local fakePlayer = {
-            GetSubRole = function() return ragdoll.was_role end,
-            GetTeam = function() return ragdoll.was_team end,
-            EntIndex = function() return victim:EntIndex() end
-        }
-
-        SendPlayerToEveryone(fakePlayer)
-    end)
-end
-
-
 if CLIENT and TTT2 then
     function SWEP:AddToSettingsMenu(parent)
         local form = vgui.CreateTTT2Form(parent, 'header_equipment_additional')
 
         form:MakeHelp({
-            label = 'help_ttt_deadringer_chargetime'
+            label = 'help_deadringer_cloak_cooldown'
         })
 
         form:MakeSlider({
-            label = 'label_ttt_deadringer_chargetime',
-            serverConvar = 'ttt_deadringer_chargetime',
+            label = 'label_deadringer_cloak_cooldown',
+            serverConvar = 'ttt_deadringer_cloak_cooldown',
             min = 1,
             max = 60,
             decimal = 0,
         })
 
         form:MakeHelp({
-            label = 'help_ttt_deadringer_cloaktime'
+            label = 'help_deadringer_cloak_duration'
         })
 
         form:MakeSlider({
-            label = 'label_ttt_deadringer_cloaktime',
-            serverConvar = 'ttt_deadringer_cloaktime',
+            label = 'label_deadringer_cloak_duration',
+            serverConvar = 'ttt_deadringer_cloak_duration',
             min = 1,
             max = 60,
             decimal = 0,
         })
 
         form:MakeHelp({
-            label = 'help_ttt_deadringer_damage_reduction'
+            label = 'help_deadringer_cloak_transparency'
         })
 
         form:MakeSlider({
-            label = 'label_ttt_deadringer_damage_reduction',
+            label = 'label_deadringer_cloak_transparency',
+            serverConvar = 'ttt_deadringer_cloak_transparency',
+            min = 0,
+            max = 1,
+            decimal = 2,
+        })
+
+        form:MakeHelp({
+            label = 'help_deadringer_cloak_targetid'
+        })
+
+        form:MakeCheckBox({
+            label = 'label_deadringer_cloak_targetid',
+            serverConvar = 'ttt_deadringer_cloak_targetid'
+        })
+
+        form:MakeHelp({
+            label = 'help_deadringer_damage_reduction'
+        })
+
+        form:MakeSlider({
+            label = 'label_deadringer_damage_reduction',
             serverConvar = 'ttt_deadringer_damage_reduction',
             min = 0,
             max = 1,
@@ -633,11 +670,11 @@ if CLIENT and TTT2 then
         })
 
         form:MakeHelp({
-            label = 'help_ttt_deadringer_damage_reduction_time'
+            label = 'help_deadringer_damage_reduction_time'
         })
 
         form:MakeSlider({
-            label = 'label_ttt_deadringer_damage_reduction_time',
+            label = 'label_deadringer_damage_reduction_time',
             serverConvar = 'ttt_deadringer_damage_reduction_time',
             min = 0,
             max = 60,
@@ -645,11 +682,11 @@ if CLIENT and TTT2 then
         })
 
         form:MakeHelp({
-            label = 'help_ttt_deadringer_damage_reduction_initial'
+            label = 'help_deadringer_damage_reduction_initial'
         })
 
         form:MakeSlider({
-            label = 'label_ttt_deadringer_damage_reduction_initial',
+            label = 'label_deadringer_damage_reduction_initial',
             serverConvar = 'ttt_deadringer_damage_reduction_initial',
             min = 0,
             max = 1,
@@ -657,20 +694,20 @@ if CLIENT and TTT2 then
         })
 
         form:MakeHelp({
-            label = 'help_ttt_deadringer_cloaktime_reuse'
+            label = 'help_deadringer_cloak_reuse'
         })
 
         form:MakeCheckBox({
-            label = 'label_ttt_deadringer_cloaktime_reuse',
-            serverConvar = 'ttt_deadringer_cloaktime_reuse'
+            label = 'label_deadringer_cloak_reuse',
+            serverConvar = 'ttt_deadringer_cloak_reuse'
         })
 
         form:MakeHelp({
-            label = 'help_ttt_deadringer_corpse_mode'
+            label = 'help_deadringer_corpse_mode'
         })
 
         form:MakeSlider({
-            label = 'label_ttt_deadringer_corpse_mode',
+            label = 'label_deadringer_corpse_mode',
             serverConvar = 'ttt_deadringer_corpse_mode',
             min = 0,
             max = 2,
@@ -678,11 +715,11 @@ if CLIENT and TTT2 then
         })
 
         form:MakeHelp({
-            label = 'help_ttt_deadringer_corpse_confirm'
+            label = 'help_deadringer_corpse_confirm'
         })
 
         form:MakeCheckBox({
-            label = 'label_ttt_deadringer_corpse_confirm',
+            label = 'label_deadringer_corpse_confirm',
             serverConvar = 'ttt_deadringer_corpse_confirm'
         })
     end

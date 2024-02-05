@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Fixed a player's role being forcibly set when being confirmed
+- Fixed weapon think code not being called on clients for listen servers
+- Fixed several hooks not being registered properly by ensuring they are registered after the gamemode has loaded
+
+### Added
+- Added `ttt_deadringer_cloak_transparency`
+    - You can change how transparent the Dead Ringer cloak is for balance reasons (0.0 - 1.0)
+    - By default it is completely transparent (0.0), if you want some subtle balance I recommend a setting of 0.05
+- Added `ttt_deadringer_cloak_targetid`
+    - By default the target id of the player will be hidden (setting of `0`) so you can't immediately follow where they are
+    - You can set this to `1` if you want to be able to see the player's name when hovering over them still
+- Added `ttt_deadringer_damage_threshold`
+    - Previously the threshold to trigger the Dead Ringer was 2 damage, this is now a setting you can change
+
+### Changed
+- Renamed `ttt_deadringer_chargetime` to `ttt_deadringer_cloak_cooldown` to be more consistent with the new transparency convar
+- Renamed `ttt_deadringer_cloaktime` to `ttt_deadringer_cloak_duration` to be more consistent with other convars
+- Renamed `ttt_deadringer_cloaktime_reuse` to `ttt_deadringer_cloak_reuse` to be more consistent with other convars
+
 ## [2.2.0]
 
 ### Fixed
