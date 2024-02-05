@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.1]
+
+### Fixed
+- Fixed custom think hook not being called properly on dedicated servers
+
 ## [3.0.0]
 
 ### Fixed
@@ -87,7 +92,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed addon settings not being set correctly for TTT2 (#1)
 
-[Unreleased]: https://github.com/gmod-workshop/ttt-deadringer/compare/3.0.0...HEAD
+[Unreleased]: https://github.com/gmod-workshop/ttt-deadringer/compare/3.0.1...HEAD
+[3.0.1]: https://github.com/gmod-workshop/ttt-deadringer/compare/3.0.0...3.0.1
 [3.0.0]: https://github.com/gmod-workshop/ttt-deadringer/compare/2.2.0...3.0.0
 [2.2.0]: https://github.com/gmod-workshop/ttt-deadringer/compare/2.1.1...2.2.0
 [2.1.1]: https://github.com/gmod-workshop/ttt-deadringer/compare/2.0.0...2.1.1
