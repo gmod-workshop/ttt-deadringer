@@ -8,9 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Fixed even more issues with a player's weapons still being visible to other players
+    - This had to do with the weapon's `SWEP:Think` not being called properly at all times
 - Fixed a player's role being forcibly set when being confirmed
 - Fixed weapon think code not being called on clients for listen servers
 - Fixed several hooks not being registered properly by ensuring they are registered after the gamemode has loaded
+    - `TTT2` is not a valid global until *after* the gamemode has loaded (post `GM:Initialize`)
 
 ### Added
 - Added `ttt_deadringer_cloak_transparency`
@@ -21,11 +24,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - You can set this to `1` if you want to be able to see the player's name when hovering over them still
 - Added `ttt_deadringer_damage_threshold`
     - Previously the threshold to trigger the Dead Ringer was 2 damage, this is now a setting you can change
+- The addon will now more closely mimic the Death Faker addon
+    - While cloaked, if your body is discovered, the scoreboard will show you as confirmed dead
+    - This will use your `ttt_deadringer_corpse_confirm` setting
+        - If it is 0, you will just show as confirmed dead and no role
+        - If it is 1, you will be shown as confirmed dead with your real role
+        - If it is 2, you will be shown as confirmed dead as an innocent
+    - This does NOT apply to public roles like Detective, your real role will always show
+    - When the cloak ends, your death will automatically be unconfirmed when the corpse disappears
+- Added some help test for TTT and TTT2 do show what the primary and secondary buttons do
 
 ### Changed
 - Renamed `ttt_deadringer_chargetime` to `ttt_deadringer_cloak_cooldown` to be more consistent with the new transparency convar
 - Renamed `ttt_deadringer_cloaktime` to `ttt_deadringer_cloak_duration` to be more consistent with other convars
 - Renamed `ttt_deadringer_cloaktime_reuse` to `ttt_deadringer_cloak_reuse` to be more consistent with other convars
+- Changed the weapon to use NW variables instead of NW2 variables
+    - This may be temporary, NW2 variables are strongly preferred but I want to see if the addon is stable first
 
 ## [2.2.0]
 
