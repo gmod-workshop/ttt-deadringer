@@ -92,6 +92,7 @@ function SWEP:Initialize()
     self.CVarCloakTransparency = GetConVar('ttt_deadringer_cloak_transparency')
     self.CVarCloakTargetid = GetConVar('ttt_deadringer_cloak_targetid')
     self.CVarCloakReactivate = GetConVar('ttt_deadringer_cloak_reactivate')
+    self.CVarCloakAttack = GetConVar('ttt_deadringer_cloak_attack')
 
     self.CVarDamageThreshold = GetConVar('ttt_deadringer_damage_threshold')
     self.CVarDamageReduction = GetConVar('ttt_deadringer_damage_reduction')
@@ -346,7 +347,7 @@ function SWEP:Think()
                 end
             end
 
-            if chargeTime < CurTime() then
+            if chargeTime < CurTime() or (not self.CVarCloakAttack:GetBool() and (owner:KeyDown(IN_ATTACK) or owner:KeyDown(IN_ATTACK2))) then
                 self:Uncloak(owner)
              end
         end
@@ -700,7 +701,8 @@ else
         local sound = net.ReadString()
         if not IsValid(wep) then return end
 
-        wep:EmitSound(sound, 100, 100, 1, CHAN_WEAPON)
+        -- Use CHAN_STATIC not CHAN_WEAPON, else uncloak sound will be overriden by a player's shooting sound when shooting to uncloak
+        wep:EmitSound(sound, 100, 100, 1, CHAN_STATIC)
     end)
 end
 
