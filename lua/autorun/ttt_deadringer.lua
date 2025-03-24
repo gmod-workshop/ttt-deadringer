@@ -48,6 +48,7 @@ CreateConVar('ttt_deadringer_cloak_reuse', '0', flags, 'Whether or not the Dead 
 CreateConVar('ttt_deadringer_cloak_transparency', '0.0', flags, 'Transparency of the Dead Ringer cloak. (0.0 = invisible, 1.0 = visible)')
 CreateConVar('ttt_deadringer_cloak_targetid', '0', flags, 'Whether or not the Dead Ringer will show the target ID while cloaked.')
 CreateConVar('ttt_deadringer_cloak_reactivate', '0', flags, 'Whether or not the Dead Ringer will automatically reactivate after recharging.')
+CreateConVar('ttt_deadringer_cloak_attack', '1', flags, 'Whether or not the Dead Ringer will allow you to attack while cloaked.')
 
 CreateConVar('ttt_deadringer_damage_threshold', '2', flags, 'Threshold to trigger the Dead Ringer. The threshold is a flat value, not a percentage')
 CreateConVar('ttt_deadringer_damage_reduction', '0.65', flags, 'Damage reduction while cloaked.')
